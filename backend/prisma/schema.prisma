@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  email    String @unique
+  password String
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+}
+
+model Movie {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  duration    Int
+
+  schedules Schedule[]
+
+  createdAt DateTime @default(now())
+}
+
+model Schedule {
+  id       Int      @id @default(autoincrement())
+  movieId  Int
+  showTime DateTime
+  studio   String
+
+  movie    Movie     @relation(fields: [movieId], references: [id])
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id         Int    @id @default(autoincrement())
+  userId     Int
+  scheduleId Int
+  seatNumber String
+
+  user     User     @relation(fields: [userId], references: [id])
+  schedule Schedule @relation(fields: [scheduleId], references: [id])
+
+  createdAt DateTime @default(now())
+}
