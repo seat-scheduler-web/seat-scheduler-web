@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { prisma } from "./lib/prisma.js";
+import { bookingRoutes } from "./routes/bookingRoutes.js";
 import { movieRoutes } from "./routes/movieRoutes.js";
 
 dotenv.config();
@@ -26,6 +27,7 @@ app.get("/health/db", async (_req, res, next) => {
 });
 
 app.use("/api/movies", movieRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error(error);
