@@ -190,6 +190,7 @@ http://localhost:3000
 | `POST` | `/api/movies` | Creates a movie with optional schedules. |
 | `PATCH` | `/api/movies/:id` | Updates a movie and optionally replaces schedules. |
 | `DELETE` | `/api/movies/:id` | Deletes a movie and its schedules. |
+| `POST` | `/api/bookings` | Creates a ticket booking and returns confirmation details. |
 
 ## README Maintenance
 
