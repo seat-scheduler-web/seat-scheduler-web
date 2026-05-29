@@ -13,6 +13,8 @@ Current backend behavior:
 - Starts an Express server.
 - Enables CORS and JSON request bodies.
 - Exposes `GET /` as a health check.
+- Exposes `GET /health/db` to test the database connection.
+- Exposes movie CRUD endpoints with nested schedule data.
 
 Current data model:
 
@@ -42,8 +44,14 @@ seat-scheduler-web/
 │   │   ├── migrations/
 │   │   └── schema.prisma
 │   ├── src/
+│   │   ├── controllers/
+│   │   │   └── movieController.js
 │   │   ├── lib/
 │   │   │   └── prisma.js
+│   │   ├── models/
+│   │   │   └── movieModel.js
+│   │   ├── routes/
+│   │   │   └── movieRoutes.js
 │   │   └── app.js
 │   ├── .env.example
 │   └── package.json
@@ -176,15 +184,12 @@ http://localhost:3000
 | Method | Endpoint | Description                                |
 | ------ | -------- | ------------------------------------------ |
 | `GET`  | `/`      | Health check. Returns `Server is running`. |
-
-Add new endpoints here as routes are implemented.
-
-Suggested format:
-
-| Method | Endpoint        | Description      |
-| ------ | --------------- | ---------------- |
-| `GET`  | `/api/movies`   | List movies      |
-| `POST` | `/api/bookings` | Create a booking |
+| `GET`  | `/health/db` | Tests the database connection. |
+| `GET`  | `/api/movies` | Lists movies with schedules. |
+| `GET`  | `/api/movies/:id` | Gets one movie with schedules. |
+| `POST` | `/api/movies` | Creates a movie with optional schedules. |
+| `PATCH` | `/api/movies/:id` | Updates a movie and optionally replaces schedules. |
+| `DELETE` | `/api/movies/:id` | Deletes a movie and its schedules. |
 
 ## README Maintenance
 
