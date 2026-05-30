@@ -26,12 +26,6 @@ async function createBooking({ userId, scheduleId, seatNumber }) {
   });
 }
 
-async function getBookingUser(id) {
-  return prisma.user.findUnique({
-    where: { id: Number(id) },
-  });
-}
-
 async function getBookingSchedule(id) {
   return prisma.schedule.findUnique({
     where: { id: Number(id) },
@@ -57,6 +51,5 @@ export {
   createBooking,
   getBookingBySeat,
   getBookingSchedule,
-  getBookingUser,
   getBookingsBySchedule,
 };
