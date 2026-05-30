@@ -6,6 +6,8 @@ import {
   getUserById,
   getUserByUsername,
 } from "../models/userModel.js";
+import { sendError } from "../lib/apiResponse.js";
+import { hasRequiredFields } from "../lib/validation.js";
 
 const saltRounds = 10;
 
@@ -19,25 +21,20 @@ async function registerUser(req, res, next) {
   try {
     const { username, email, password } = req.body;
 
-    if (!username || !email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Username, email, and password are required" });
+    if (!hasRequiredFields(req.body, ["username", "email", "password"])) {
+      return sendError(res, 400, "Username, email, and password are required");
     }
 
     if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 6 characters" });
+      return sendError(res, 400, "Password must be at least 6 characters");
     }
 
     const existingUsername = await getUserByUsername(username);
     if (existingUsername)
-      return res.status(409).json({ message: "Username already exists" });
+      return sendError(res, 409, "Username already exists");
 
     const existingEmail = await getUserByEmail(email);
-    if (existingEmail)
-      return res.status(409).json({ message: "Email already exists" });
+    if (existingEmail) return sendError(res, 409, "Email already exists");
 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const user = await createUser({
@@ -60,16 +57,15 @@ async function loginUser(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+    if (!hasRequiredFields(req.body, ["email", "password"])) {
+      return sendError(res, 400, "Email and password are required");
     }
 
     const user = await getUserByEmail(email);
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    if (!user) return sendError(res, 401, "Invalid credentials");
 
     const passwordMatches = await bcrypt.compare(password, user.password);
-    if (!passwordMatches)
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (!passwordMatches) return sendError(res, 401, "Invalid credentials");
 
     res.json({
       message: "Login successful",
@@ -91,7 +87,7 @@ async function getCurrentUser(req, res, next) {
   try {
     const user = await getUserById(req.userId);
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return sendError(res, 404, "User not found");
 
     res.json(user);
   } catch (error) {

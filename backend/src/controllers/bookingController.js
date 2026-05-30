@@ -6,38 +6,34 @@ import {
   getBookingSchedule,
   getBookingsByUser,
 } from "../models/bookingModel.js";
-
-function isPositiveNumber(value) {
-  return Number.isInteger(Number(value)) && Number(value) > 0;
-}
+import { sendError } from "../lib/apiResponse.js";
+import {
+  hasRequiredFields,
+  isNonEmptyString,
+  isPositiveId,
+} from "../lib/validation.js";
 
 async function addBooking(req, res, next) {
   try {
     const { scheduleId, seatNumber } = req.body;
 
-    if (!scheduleId || !seatNumber) {
-      return res
-        .status(400)
-        .json({ message: "Schedule and seat number are required" });
+    if (!hasRequiredFields(req.body, ["scheduleId", "seatNumber"])) {
+      return sendError(res, 400, "Schedule and seat number are required");
     }
 
-    if (!isPositiveNumber(scheduleId)) {
-      return res.status(400).json({ message: "Schedule must be a valid id" });
+    if (!isPositiveId(scheduleId)) {
+      return sendError(res, 400, "Schedule must be a valid id");
     }
 
-    if (typeof seatNumber !== "string" || seatNumber.trim() === "") {
-      return res
-        .status(400)
-        .json({ message: "Seat number must be a valid string" });
+    if (!isNonEmptyString(seatNumber)) {
+      return sendError(res, 400, "Seat number must be a valid string");
     }
 
     const schedule = await getBookingSchedule(scheduleId);
-    if (!schedule)
-      return res.status(404).json({ message: "Schedule not found" });
+    if (!schedule) return sendError(res, 404, "Schedule not found");
 
     const bookedSeat = await getBookingBySeat(scheduleId, seatNumber.trim());
-    if (bookedSeat)
-      return res.status(409).json({ message: "Seat is already booked" });
+    if (bookedSeat) return sendError(res, 409, "Seat is already booked");
 
     const booking = await createBooking({
       userId: req.userId,
@@ -51,7 +47,7 @@ async function addBooking(req, res, next) {
     });
   } catch (error) {
     if (error.code === "P2002") {
-      return res.status(409).json({ message: "Seat is already booked" });
+      return sendError(res, 409, "Seat is already booked");
     }
 
     next(error);
@@ -69,19 +65,19 @@ async function listUserBookings(req, res, next) {
 
 async function removeBooking(req, res, next) {
   try {
-    if (!isPositiveNumber(req.params.id)) {
-      return res.status(400).json({ message: "Booking must be a valid id" });
+    if (!isPositiveId(req.params.id)) {
+      return sendError(res, 400, "Booking must be a valid id");
     }
 
     const booking = await getBookingById(req.params.id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (!booking) return sendError(res, 404, "Booking not found");
 
     if (booking.userId !== req.userId) {
-      return res.status(403).json({ message: "You can only cancel your own booking" });
+      return sendError(res, 403, "You can only cancel your own booking");
     }
 
     if (booking.status === "CANCELLED") {
-      return res.status(400).json({ message: "Booking is already cancelled" });
+      return sendError(res, 400, "Booking is already cancelled");
     }
 
     const cancelledBooking = await cancelBooking(req.params.id);
