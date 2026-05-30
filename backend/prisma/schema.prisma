@@ -47,6 +47,7 @@ model Booking {
   userId     Int
   scheduleId Int
   seatNumber String
+  status     String @default("CONFIRMED")
 
   user     User     @relation(fields: [userId], references: [id])
   schedule Schedule @relation(fields: [scheduleId], references: [id])
