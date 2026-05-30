@@ -5,6 +5,8 @@ import {
   getMovies,
   updateMovie,
 } from "../models/movieModel.js";
+import { sendError } from "../lib/apiResponse.js";
+import { hasRequiredFields, isPositiveId } from "../lib/validation.js";
 
 async function listMovies(_req, res, next) {
   try {
@@ -17,9 +19,13 @@ async function listMovies(_req, res, next) {
 
 async function getMovie(req, res, next) {
   try {
+    if (!isPositiveId(req.params.id)) {
+      return sendError(res, 400, "Movie must be a valid id");
+    }
+
     const movie = await getMovieById(req.params.id);
 
-    if (!movie) return res.status(404).json({ message: "Movie not found" });
+    if (!movie) return sendError(res, 404, "Movie not found");
 
     res.json(movie);
   } catch (error) {
@@ -29,8 +35,8 @@ async function getMovie(req, res, next) {
 
 async function addMovie(req, res, next) {
   try {
-    if (!req.body.title || !req.body.duration) {
-      return res.status(400).json({ message: "Title and duration are required" });
+    if (!hasRequiredFields(req.body, ["title", "duration"])) {
+      return sendError(res, 400, "Title and duration are required");
     }
 
     const movie = await createMovie(req.body);
@@ -42,9 +48,13 @@ async function addMovie(req, res, next) {
 
 async function editMovie(req, res, next) {
   try {
+    if (!isPositiveId(req.params.id)) {
+      return sendError(res, 400, "Movie must be a valid id");
+    }
+
     const movie = await updateMovie(req.params.id, req.body);
 
-    if (!movie) return res.status(404).json({ message: "Movie not found" });
+    if (!movie) return sendError(res, 404, "Movie not found");
 
     res.json(movie);
   } catch (error) {
@@ -54,9 +64,13 @@ async function editMovie(req, res, next) {
 
 async function removeMovie(req, res, next) {
   try {
+    if (!isPositiveId(req.params.id)) {
+      return sendError(res, 400, "Movie must be a valid id");
+    }
+
     const movie = await deleteMovie(req.params.id);
 
-    if (!movie) return res.status(404).json({ message: "Movie not found" });
+    if (!movie) return sendError(res, 404, "Movie not found");
 
     res.json(movie);
   } catch (error) {

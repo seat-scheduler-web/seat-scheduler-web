@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { sendError } from "./lib/apiResponse.js";
 import { prisma } from "./lib/prisma.js";
 import { bookingRoutes } from "./routes/bookingRoutes.js";
 import { movieRoutes } from "./routes/movieRoutes.js";
@@ -35,7 +36,16 @@ app.use("/api/users", userRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error(error);
-  res.status(500).json({ message: "Internal server error" });
+
+  if (error.code === "P2002") {
+    return sendError(res, 409, "Resource already exists");
+  }
+
+  if (error.code === "P2025") {
+    return sendError(res, 404, "Resource not found");
+  }
+
+  sendError(res, 500, "Internal server error");
 });
 
 app.listen(PORT, () => {
