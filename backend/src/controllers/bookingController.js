@@ -2,7 +2,6 @@ import {
   createBooking,
   getBookingBySeat,
   getBookingSchedule,
-  getBookingUser,
 } from "../models/bookingModel.js";
 
 function isPositiveNumber(value) {
@@ -11,18 +10,16 @@ function isPositiveNumber(value) {
 
 async function addBooking(req, res, next) {
   try {
-    const { userId, scheduleId, seatNumber } = req.body;
+    const { scheduleId, seatNumber } = req.body;
 
-    if (!userId || !scheduleId || !seatNumber) {
+    if (!scheduleId || !seatNumber) {
       return res
         .status(400)
-        .json({ message: "User, schedule, and seat number are required" });
+        .json({ message: "Schedule and seat number are required" });
     }
 
-    if (!isPositiveNumber(userId) || !isPositiveNumber(scheduleId)) {
-      return res
-        .status(400)
-        .json({ message: "User and schedule must be valid ids" });
+    if (!isPositiveNumber(scheduleId)) {
+      return res.status(400).json({ message: "Schedule must be a valid id" });
     }
 
     if (typeof seatNumber !== "string" || seatNumber.trim() === "") {
@@ -30,9 +27,6 @@ async function addBooking(req, res, next) {
         .status(400)
         .json({ message: "Seat number must be a valid string" });
     }
-
-    const user = await getBookingUser(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
 
     const schedule = await getBookingSchedule(scheduleId);
     if (!schedule)
@@ -43,7 +37,7 @@ async function addBooking(req, res, next) {
       return res.status(409).json({ message: "Seat is already booked" });
 
     const booking = await createBooking({
-      userId,
+      userId: req.userId,
       scheduleId,
       seatNumber: seatNumber.trim(),
     });
@@ -53,6 +47,10 @@ async function addBooking(req, res, next) {
       booking,
     });
   } catch (error) {
+    if (error.code === "P2002") {
+      return res.status(409).json({ message: "Seat is already booked" });
+    }
+
     next(error);
   }
 }

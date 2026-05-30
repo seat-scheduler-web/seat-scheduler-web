@@ -52,4 +52,6 @@ model Booking {
   schedule Schedule @relation(fields: [scheduleId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@unique([scheduleId, seatNumber])
 }
