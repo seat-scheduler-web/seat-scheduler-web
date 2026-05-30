@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addSchedule,
   getSchedule,
+  getSeatAvailability,
   listSchedules,
 } from "../controllers/scheduleController.js";
 import {
@@ -12,6 +13,7 @@ import {
 const router = Router();
 
 router.get("/", listSchedules);
+router.get("/:id/seats", getSeatAvailability);
 router.get("/:id", getSchedule);
 router.post("/", authMiddleware, adminMiddleware, addSchedule);
 
