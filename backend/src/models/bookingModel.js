@@ -47,4 +47,16 @@ async function getBookingBySeat(scheduleId, seatNumber) {
   });
 }
 
-export { createBooking, getBookingBySeat, getBookingSchedule, getBookingUser };
+async function getBookingsBySchedule(scheduleId) {
+  return prisma.booking.findMany({
+    where: { scheduleId: Number(scheduleId) },
+  });
+}
+
+export {
+  createBooking,
+  getBookingBySeat,
+  getBookingSchedule,
+  getBookingUser,
+  getBookingsBySchedule,
+};

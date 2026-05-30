@@ -1,3 +1,4 @@
+import { getBookingsBySchedule } from "../models/bookingModel.js";
 import { getMovieById } from "../models/movieModel.js";
 import {
   createSchedule,
@@ -5,12 +6,21 @@ import {
   getSchedules,
 } from "../models/scheduleModel.js";
 
+const seatRows = ["A", "B", "C", "D", "E"];
+const seatsPerRow = 8;
+
 function isPositiveNumber(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;
 }
 
 function isValidDate(value) {
   return !Number.isNaN(new Date(value).getTime());
+}
+
+function getSeatNumbers() {
+  return seatRows.flatMap((row) =>
+    Array.from({ length: seatsPerRow }, (_seat, index) => `${row}${index + 1}`),
+  );
 }
 
 async function listSchedules(req, res, next) {
@@ -39,6 +49,31 @@ async function getSchedule(req, res, next) {
     if (!schedule) return res.status(404).json({ message: "Schedule not found" });
 
     res.json(schedule);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getSeatAvailability(req, res, next) {
+  try {
+    if (!isPositiveNumber(req.params.id)) {
+      return res.status(400).json({ message: "Schedule must be a valid id" });
+    }
+
+    const schedule = await getScheduleById(req.params.id);
+    if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+
+    const bookings = await getBookingsBySchedule(req.params.id);
+    const bookedSeats = bookings.map((booking) => booking.seatNumber);
+    const bookedSeatSet = new Set(bookedSeats);
+    const seats = getSeatNumbers();
+
+    res.json({
+      schedule,
+      seats,
+      availableSeats: seats.filter((seat) => !bookedSeatSet.has(seat)),
+      bookedSeats,
+    });
   } catch (error) {
     next(error);
   }
@@ -81,4 +116,4 @@ async function addSchedule(req, res, next) {
   }
 }
 
-export { addSchedule, getSchedule, listSchedules };
+export { addSchedule, getSchedule, getSeatAvailability, listSchedules };
