@@ -47,9 +47,35 @@ async function getBookingsBySchedule(scheduleId) {
   });
 }
 
+async function getBookingsByUser(userId) {
+  return prisma.booking.findMany({
+    where: { userId: Number(userId) },
+    include: includeConfirmation,
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+async function getBookingById(id) {
+  return prisma.booking.findUnique({
+    where: { id: Number(id) },
+    include: includeConfirmation,
+  });
+}
+
+async function cancelBooking(id) {
+  return prisma.booking.update({
+    where: { id: Number(id) },
+    data: { status: "CANCELLED" },
+    include: includeConfirmation,
+  });
+}
+
 export {
+  cancelBooking,
   createBooking,
+  getBookingById,
   getBookingBySeat,
   getBookingSchedule,
   getBookingsBySchedule,
+  getBookingsByUser,
 };
