@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ScheduleDetail from "./pages/ScheduleDetail";
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -21,6 +22,7 @@ function AppRoutes() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/schedules/:id" element={<ScheduleDetail />} />
         <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
         <Route
           path="/register"
