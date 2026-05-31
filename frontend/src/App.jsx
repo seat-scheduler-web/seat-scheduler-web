@@ -26,12 +26,18 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/schedules/:id" element={<ScheduleDetail />} />
-        <Route path="/schedules/:id/seats" element={<SeatSelection />} />
+        <Route
+          path="/schedules/:id/seats"
+          element={user ? <SeatSelection /> : <Navigate to="/login" />}
+        />
         <Route
           path="/bookings/:id/confirmation"
-          element={<BookingConfirmation />}
+          element={user ? <BookingConfirmation /> : <Navigate to="/login" />}
         />
-        <Route path="/my-bookings" element={<MyBookings />} />
+        <Route
+          path="/my-bookings"
+          element={user ? <MyBookings /> : <Navigate to="/login" />}
+        />
         <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
         <Route
           path="/register"
