@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ScheduleDetail from "./pages/ScheduleDetail";
 import SeatSelection from "./pages/SeatSelection";
+import BookingConfirmation from "./pages/BookingConfirmation";
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -25,6 +26,10 @@ function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/schedules/:id" element={<ScheduleDetail />} />
         <Route path="/schedules/:id/seats" element={<SeatSelection />} />
+        <Route
+          path="/bookings/:id/confirmation"
+          element={<BookingConfirmation />}
+        />
         <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
         <Route
           path="/register"
