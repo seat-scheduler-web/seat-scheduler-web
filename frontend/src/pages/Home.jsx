@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
+import { MovieCardSkeleton } from "../components/Skeleton";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -41,9 +42,18 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <span className="loading loading-spinner loading-lg text-primary" />
-        <p className="text-sm opacity-60">Loading movies...</p>
+      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="h-9 w-48 bg-base-300 rounded animate-pulse" />
+            <div className="h-4 w-32 bg-base-300 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <MovieCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
