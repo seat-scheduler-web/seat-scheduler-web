@@ -51,6 +51,22 @@ const genreColors = {
   Mystery: "badge-accent",
 };
 
+const SORT_OPTIONS = [
+  { value: "default", label: "Default" },
+  { value: "title-asc", label: "Title (A-Z)" },
+  { value: "title-desc", label: "Title (Z-A)" },
+  { value: "duration-asc", label: "Duration (Shortest)" },
+  { value: "duration-desc", label: "Duration (Longest)" },
+  { value: "newest", label: "Newest" },
+];
+
+const DURATION_FILTERS = [
+  { value: "all", label: "All Durations" },
+  { value: "short", label: "Short (< 90 min)" },
+  { value: "medium", label: "Medium (90-150 min)" },
+  { value: "long", label: "Long (> 150 min)" },
+];
+
 function getGenreColor(genre) {
   if (!genre) return "badge-soft";
   return genreColors[genre] || "badge-soft";
@@ -115,11 +131,19 @@ function MoviePoster({ movie, index }) {
   );
 }
 
+function getDurationCategory(minutes) {
+  if (minutes < 90) return "short";
+  if (minutes <= 150) return "medium";
+  return "long";
+}
+
 export default function Home() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("default");
+  const [durationFilter, setDurationFilter] = useState("all");
 
   useEffect(() => {
     apiRequest("/movies")
@@ -128,17 +152,53 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredMovies = useMemo(() => {
-    if (!searchQuery.trim()) return movies;
+  const processedMovies = useMemo(() => {
+    let result = [...movies];
 
-    const query = searchQuery.toLowerCase().trim();
-    return movies.filter((movie) => {
-      const titleMatch = movie.title?.toLowerCase().includes(query);
-      const descMatch = movie.description?.toLowerCase().includes(query);
-      const genreMatch = movie.genre?.toLowerCase().includes(query);
-      return titleMatch || descMatch || genreMatch;
-    });
-  }, [movies, searchQuery]);
+    // 1. Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter((movie) => {
+        const titleMatch = movie.title?.toLowerCase().includes(query);
+        const descMatch = movie.description?.toLowerCase().includes(query);
+        const genreMatch = movie.genre?.toLowerCase().includes(query);
+        return titleMatch || descMatch || genreMatch;
+      });
+    }
+
+    // 2. Duration filter
+    if (durationFilter !== "all") {
+      result = result.filter(
+        (movie) => getDurationCategory(movie.duration) === durationFilter,
+      );
+    }
+
+    // 3. Sort
+    switch (sortBy) {
+      case "title-asc":
+        result.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "title-desc":
+        result.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case "duration-asc":
+        result.sort((a, b) => a.duration - b.duration);
+        break;
+      case "duration-desc":
+        result.sort((a, b) => b.duration - a.duration);
+        break;
+      case "newest":
+        result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+      default:
+        break;
+    }
+
+    return result;
+  }, [movies, searchQuery, sortBy, durationFilter]);
+
+  const hasActiveFilters =
+    searchQuery.trim() || sortBy !== "default" || durationFilter !== "all";
 
   if (loading) {
     return (
@@ -154,9 +214,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Search Skeleton */}
-        <div className="max-w-5xl mx-auto px-4 md:px-6">
+        {/* Controls Skeleton */}
+        <div className="max-w-5xl mx-auto px-4 md:px-6 space-y-4">
           <div className="h-12 bg-base-300 rounded-xl animate-pulse" />
+          <div className="flex gap-3">
+            <div className="h-10 w-40 bg-base-300 rounded-lg animate-pulse" />
+            <div className="h-10 w-40 bg-base-300 rounded-lg animate-pulse" />
+          </div>
         </div>
 
         {/* Movie Grid Skeleton */}
@@ -231,10 +295,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Search & Movie Grid */}
+      {/* Search, Sort & Filter Controls */}
       <section className="max-w-5xl mx-auto p-4 md:p-6">
         {/* Search Input */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="relative max-w-md mx-auto">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
@@ -273,20 +337,83 @@ export default function Home() {
               </button>
             )}
           </div>
-          {searchQuery && (
-            <p className="text-center text-sm opacity-50 mt-2">
-              {filteredMovies.length} result
-              {filteredMovies.length !== 1 ? "s" : ""} found
-              {filteredMovies.length !== movies.length &&
-                ` out of ${movies.length}`}
-            </p>
+        </div>
+
+        {/* Sort & Filter Row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm opacity-50 whitespace-nowrap">
+              Sort by:
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="select select-bordered select-sm flex-1 sm:flex-none focus:select-primary transition-colors duration-200"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Duration Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm opacity-50 whitespace-nowrap">
+              Duration:
+            </label>
+            <select
+              value={durationFilter}
+              onChange={(e) => setDurationFilter(e.target.value)}
+              className="select select-bordered select-sm flex-1 sm:flex-none focus:select-primary transition-colors duration-200"
+            >
+              {DURATION_FILTERS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSortBy("default");
+                setDurationFilter("all");
+              }}
+              className="btn btn-ghost btn-sm gap-1.5 text-sm opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-4 h-4"
+              >
+                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+              </svg>
+              Clear all
+            </button>
           )}
         </div>
+
+        {/* Results Count */}
+        {hasActiveFilters && (
+          <p className="text-center text-sm opacity-50 mb-4">
+            {processedMovies.length} result
+            {processedMovies.length !== 1 ? "s" : ""} found
+            {processedMovies.length !== movies.length &&
+              ` out of ${movies.length}`}
+          </p>
+        )}
 
         {/* Section Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl md:text-2xl font-bold tracking-tight">
-            {searchQuery ? "Search Results" : "All Movies"}
+            {hasActiveFilters ? "Filtered Results" : "All Movies"}
           </h2>
           <div className="flex items-center gap-2 text-sm opacity-50">
             <svg
@@ -301,34 +428,39 @@ export default function Home() {
                 clipRule="evenodd"
               />
             </svg>
-            <span>{filteredMovies.length} titles</span>
+            <span>{processedMovies.length} titles</span>
           </div>
         </div>
 
-        {/* Empty State for Search */}
-        {filteredMovies.length === 0 ? (
+        {/* Empty State */}
+        {processedMovies.length === 0 ? (
           <div className="hero min-h-[40vh]">
             <div className="hero-content text-center">
               <div className="max-w-md space-y-4">
                 <div className="text-6xl">🔍</div>
                 <h2 className="text-xl font-bold">No movies found</h2>
                 <p className="opacity-60">
-                  No results for "
-                  <span className="font-semibold">{searchQuery}</span>". Try a
-                  different search term.
+                  {searchQuery.trim()
+                    ? `No results for "${searchQuery}" with the current filters.`
+                    : "No movies match the current filters."}{" "}
+                  Try adjusting your search or filters.
                 </p>
                 <button
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSortBy("default");
+                    setDurationFilter("all");
+                  }}
                   className="btn btn-outline btn-sm"
                 >
-                  Clear search
+                  Clear all filters
                 </button>
               </div>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredMovies.map((movie, index) => {
+            {processedMovies.map((movie, index) => {
               const gradient =
                 movieGradientFades[index % movieGradientFades.length];
               const firstSchedule = movie.schedules?.[0];
