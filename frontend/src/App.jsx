@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import { ToastProvider } from "./components/Toast";
+import PageTransition from "./components/PageTransition";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -25,24 +26,81 @@ function AppRoutes() {
     <>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/schedules/:id" element={<ScheduleDetail />} />
+        <Route
+          path="/"
+          element={
+            <PageTransition>
+              <Home />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/schedules/:id"
+          element={
+            <PageTransition>
+              <ScheduleDetail />
+            </PageTransition>
+          }
+        />
         <Route
           path="/schedules/:id/seats"
-          element={user ? <SeatSelection /> : <Navigate to="/login" />}
+          element={
+            user ? (
+              <PageTransition>
+                <SeatSelection />
+              </PageTransition>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
         />
         <Route
           path="/bookings/:id/confirmation"
-          element={user ? <BookingConfirmation /> : <Navigate to="/login" />}
+          element={
+            user ? (
+              <PageTransition>
+                <BookingConfirmation />
+              </PageTransition>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
         />
         <Route
           path="/my-bookings"
-          element={user ? <MyBookings /> : <Navigate to="/login" />}
+          element={
+            user ? (
+              <PageTransition>
+                <MyBookings />
+              </PageTransition>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
         />
-        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate to="/" />
+            ) : (
+              <PageTransition>
+                <Login />
+              </PageTransition>
+            )
+          }
+        />
         <Route
           path="/register"
-          element={user ? <Navigate to="/" /> : <Register />}
+          element={
+            user ? (
+              <Navigate to="/" />
+            ) : (
+              <PageTransition>
+                <Register />
+              </PageTransition>
+            )
+          }
         />
       </Routes>
     </>

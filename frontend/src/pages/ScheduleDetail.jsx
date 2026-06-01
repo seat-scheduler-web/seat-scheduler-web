@@ -101,7 +101,7 @@ export default function ScheduleDetail() {
       </nav>
 
       {/* Schedule Card */}
-      <div className="card bg-base-200 shadow-lg overflow-hidden">
+      <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
         {/* Accent Bar */}
         <div className="h-2 bg-gradient-to-r from-violet-500/40 via-purple-500/40 to-fuchsia-500/40" />
 
@@ -133,8 +133,8 @@ export default function ScheduleDetail() {
           {/* Schedule Info */}
           <div className="space-y-4">
             {/* Date & Time */}
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="flex items-start gap-3 group/info">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover/info:bg-primary/20 transition-colors duration-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
@@ -159,8 +159,8 @@ export default function ScheduleDetail() {
             </div>
 
             {/* Studio */}
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
+            <div className="flex items-start gap-3 group/info">
+              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0 group-hover/info:bg-secondary/20 transition-colors duration-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
@@ -190,7 +190,7 @@ export default function ScheduleDetail() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
               to={`/schedules/${id}/seats`}
-              className="btn btn-primary btn-lg flex-1"
+              className="btn btn-primary btn-lg flex-1 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -202,7 +202,10 @@ export default function ScheduleDetail() {
               </svg>
               Select Seat
             </Link>
-            <Link to="/" className="btn btn-outline btn-lg">
+            <Link
+              to="/"
+              className="btn btn-outline btn-lg hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
+            >
               Back to Movies
             </Link>
           </div>

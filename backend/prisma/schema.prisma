@@ -26,6 +26,8 @@ model Movie {
   title       String
   description String?
   duration    Int
+  genre       String?
+  posterUrl   String?
 
   schedules Schedule[]
 
