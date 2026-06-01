@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = "https://seat-scheduler-api.onrender.com/api";
 
 export async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem("token");
