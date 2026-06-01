@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
+import { SeatSelectionSkeleton } from "../components/Skeleton";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -26,6 +28,7 @@ export default function SeatSelection() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -68,12 +71,7 @@ export default function SeatSelection() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <span className="loading loading-spinner loading-lg text-primary" />
-        <p className="text-sm opacity-60">Loading seat map...</p>
-      </div>
-    );
+    return <SeatSelectionSkeleton />;
   }
 
   if (error) {

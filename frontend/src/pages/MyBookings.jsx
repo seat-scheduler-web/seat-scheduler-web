@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
+import { useToast } from "../components/Toast";
+import { MyBookingsSkeleton } from "../components/Skeleton";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -15,6 +17,7 @@ function formatDateTime(dateStr) {
 }
 
 export default function MyBookings() {
+  const { addToast } = useToast();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,20 +39,17 @@ export default function MyBookings() {
           b.id === bookingId ? { ...b, status: "CANCELLED" } : b,
         ),
       );
+      addToast("Booking cancelled successfully", "success");
     } catch (err) {
       setError(err.message);
+      addToast(err.message, "error");
     } finally {
       setCancellingId(null);
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <span className="loading loading-spinner loading-lg text-primary" />
-        <p className="text-sm opacity-60">Loading your bookings...</p>
-      </div>
-    );
+    return <MyBookingsSkeleton />;
   }
 
   if (error && !bookings.length) {

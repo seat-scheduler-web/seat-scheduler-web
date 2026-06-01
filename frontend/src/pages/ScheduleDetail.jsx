@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
+import { ScheduleDetailSkeleton } from "../components/Skeleton";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -37,12 +38,7 @@ export default function ScheduleDetail() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <span className="loading loading-spinner loading-lg text-primary" />
-        <p className="text-sm opacity-60">Loading schedule details...</p>
-      </div>
-    );
+    return <ScheduleDetailSkeleton />;
   }
 
   if (error) {
