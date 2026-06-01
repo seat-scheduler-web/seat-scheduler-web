@@ -1,4 +1,5 @@
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useParams } from "react-router-dom";
+import { useBuyerQueue } from "../context/BuyerQueueContext";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -112,6 +113,14 @@ function QRCodePlaceholder() {
 export default function BookingConfirmation() {
   const location = useLocation();
   const booking = location.state?.booking;
+  const { advanceQueue } = useBuyerQueue();
+
+  // Advance the queue when booking is confirmed
+  useEffect(() => {
+    if (booking?.schedule?.id) {
+      advanceQueue(booking.schedule.id);
+    }
+  }, [booking, advanceQueue]);
 
   function handlePrint() {
     window.print();

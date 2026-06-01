@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { MovieCardSkeleton } from "../components/Skeleton";
+import { useAuth } from "../context/AuthContext";
+import { useBuyerQueue } from "../context/BuyerQueueContext";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -138,6 +140,8 @@ function getDurationCategory(minutes) {
 }
 
 export default function Home() {
+  const { user } = useAuth();
+  const { joinQueue, getQueue, getPosition } = useBuyerQueue();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -591,6 +595,30 @@ export default function Home() {
                             />
                           </svg>
                           No schedules available yet
+                        </div>
+                      )}
+
+                      {/* Book Now Button */}
+                      {movie.schedules && movie.schedules.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-base-300">
+                          <button
+                            onClick={() => {
+                              if (user) {
+                                joinQueue(movie.schedules[0].id, user);
+                              }
+                            }}
+                            className="btn btn-primary btn-sm w-full gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              className="w-4 h-4"
+                            >
+                              <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
+                            </svg>
+                            {user ? "Book Now" : "Login to Book"}
+                          </button>
                         </div>
                       )}
                     </div>
