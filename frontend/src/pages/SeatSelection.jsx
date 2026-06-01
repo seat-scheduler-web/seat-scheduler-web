@@ -122,7 +122,7 @@ export default function SeatSelection() {
       </nav>
 
       {/* Movie & Schedule Summary */}
-      <div className="card bg-base-200 shadow-md mb-6">
+      <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow duration-300 mb-6">
         <div className="card-body p-4 md:p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
@@ -151,7 +151,7 @@ export default function SeatSelection() {
       </div>
 
       {/* Seat Map */}
-      <div className="card bg-base-200 shadow-md">
+      <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow duration-300">
         {/* Screen Indicator */}
         <div className="pt-8 pb-4">
           <div className="w-3/4 mx-auto">
@@ -210,7 +210,7 @@ export default function SeatSelection() {
       </div>
 
       {/* Summary & Action */}
-      <div className="card bg-base-200 shadow-md mt-6">
+      <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow duration-300 mt-6">
         <div className="card-body p-4 md:p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -256,7 +256,7 @@ export default function SeatSelection() {
               <button
                 onClick={handleBooking}
                 disabled={!selectedSeat || !user || submitting}
-                className="btn btn-primary btn-lg w-full sm:w-auto"
+                className="btn btn-primary btn-lg w-full sm:w-auto hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
               >
                 {submitting ? (
                   <>

@@ -74,7 +74,10 @@ export default function MyBookings() {
             {bookings.length} booking{bookings.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link to="/" className="btn btn-outline btn-sm gap-1.5">
+        <Link
+          to="/"
+          className="btn btn-outline btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -117,7 +120,7 @@ export default function MyBookings() {
             return (
               <div
                 key={booking.id}
-                className={`card bg-base-200 shadow-md transition-all duration-300 ${
+                className={`card bg-base-200 shadow-md hover:shadow-lg transition-all duration-300 ${
                   isCancelled ? "opacity-60" : ""
                 }`}
               >
@@ -210,7 +213,7 @@ export default function MyBookings() {
                         <button
                           onClick={() => handleCancel(booking.id)}
                           disabled={cancellingId === booking.id}
-                          className="btn btn-outline btn-error btn-sm gap-1.5"
+                          className="btn btn-outline btn-error btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
                         >
                           {cancellingId === booking.id ? (
                             <>

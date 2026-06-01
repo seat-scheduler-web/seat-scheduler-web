@@ -19,7 +19,7 @@ async function seedUser({ username, email, role }) {
   });
 }
 
-async function seedMovie({ title, description, duration }) {
+async function seedMovie({ title, description, duration, genre, posterUrl }) {
   const movie = await prisma.movie.findFirst({
     where: { title },
   });
@@ -31,6 +31,8 @@ async function seedMovie({ title, description, duration }) {
       title,
       description,
       duration,
+      genre,
+      posterUrl,
     },
   });
 }
@@ -92,12 +94,34 @@ async function main() {
     title: "Interstellar",
     description: "A space exploration story about time, family, and survival.",
     duration: 169,
+    genre: "Sci-Fi",
+    posterUrl: null,
   });
 
   const spiritedAway = await seedMovie({
     title: "Spirited Away",
     description: "A young girl enters a mysterious world of spirits.",
     duration: 125,
+    genre: "Animation",
+    posterUrl: null,
+  });
+
+  const darkKnight = await seedMovie({
+    title: "The Dark Knight",
+    description:
+      "Batman faces the Joker, a criminal mastermind who wants to plunge Gotham into anarchy.",
+    duration: 152,
+    genre: "Action",
+    posterUrl: null,
+  });
+
+  const grandBudapest = await seedMovie({
+    title: "The Grand Budapest Hotel",
+    description:
+      "A legendary concierge at a famous European hotel between the wars and his friendship with a young employee.",
+    duration: 99,
+    genre: "Comedy",
+    posterUrl: null,
   });
 
   const interstellarEvening = await seedSchedule({
@@ -116,6 +140,18 @@ async function main() {
     movieId: spiritedAway.id,
     showTime: "2026-06-05T16:30:00.000Z",
     studio: "Studio 3",
+  });
+
+  await seedSchedule({
+    movieId: darkKnight.id,
+    showTime: "2026-06-07T20:00:00.000Z",
+    studio: "Studio 1",
+  });
+
+  await seedSchedule({
+    movieId: grandBudapest.id,
+    showTime: "2026-06-08T15:00:00.000Z",
+    studio: "Studio 4",
   });
 
   await seedBooking({
