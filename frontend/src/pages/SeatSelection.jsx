@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
+import { useBuyerQueue } from "../context/BuyerQueueContext";
 import { SeatSelectionSkeleton } from "../components/Skeleton";
 
 function formatDateTime(dateStr) {
@@ -29,6 +30,8 @@ export default function SeatSelection() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { getQueue, getPosition, isFirstInLine, getNextInLine, joinQueue } =
+    useBuyerQueue();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +39,11 @@ export default function SeatSelection() {
   const [selectedSeat, setSelectedSeat] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  const queue = getQueue(id);
+  const position = user ? getPosition(id, user.username) : 0;
+  const firstInLine = user ? isFirstInLine(id, user.username) : false;
+  const nextInLine = getNextInLine(id);
 
   useEffect(() => {
     setLoading(true);
@@ -47,8 +55,22 @@ export default function SeatSelection() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Auto-join queue when user visits seat selection page
+  useEffect(() => {
+    if (user && id) {
+      joinQueue(id, user);
+    }
+  }, [user, id, joinQueue]);
+
   async function handleBooking() {
     if (!selectedSeat) return;
+
+    // Check if user is first in line (if queue has people)
+    if (queue.length > 0 && !firstInLine) {
+      addToast("Please wait for your turn in the queue", "warning");
+      return;
+    }
+
     setSubmitError("");
     setSubmitting(true);
 
@@ -120,6 +142,82 @@ export default function SeatSelection() {
           <li>Select Seat</li>
         </ul>
       </nav>
+
+      {/* Queue Status Banner */}
+      {queue.length > 0 && user && (
+        <div
+          className={`card mb-6 ${
+            firstInLine
+              ? "bg-success/10 border border-success/30"
+              : "bg-base-200 border border-base-300/50"
+          }`}
+        >
+          <div className="card-body p-4">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                  firstInLine ? "bg-success/20" : "bg-primary/10"
+                }`}
+              >
+                {firstInLine ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-5 h-5 text-success"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-5 h-5 text-primary"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                {firstInLine ? (
+                  <>
+                    <p className="font-semibold text-success">
+                      You're next in line!
+                    </p>
+                    <p className="text-sm opacity-60">
+                      Select your seat and confirm your booking.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold">
+                      Queue position:{" "}
+                      <span className="text-primary">#{position}</span>
+                    </p>
+                    <p className="text-sm opacity-60">
+                      {nextInLine
+                        ? `${nextInLine.username} is currently booking. Please wait for your turn.`
+                        : "Please wait for your turn."}
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-xs opacity-40">{queue.length} in queue</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Movie & Schedule Summary */}
       <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow duration-300 mb-6">
@@ -255,7 +353,12 @@ export default function SeatSelection() {
 
               <button
                 onClick={handleBooking}
-                disabled={!selectedSeat || !user || submitting}
+                disabled={
+                  !selectedSeat ||
+                  !user ||
+                  submitting ||
+                  (queue.length > 0 && !firstInLine)
+                }
                 className="btn btn-primary btn-lg w-full sm:w-auto hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
               >
                 {submitting ? (
@@ -265,6 +368,22 @@ export default function SeatSelection() {
                   </>
                 ) : !selectedSeat ? (
                   "Select a seat"
+                ) : queue.length > 0 && !firstInLine ? (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Waiting in queue...
+                  </>
                 ) : (
                   <>
                     <svg
