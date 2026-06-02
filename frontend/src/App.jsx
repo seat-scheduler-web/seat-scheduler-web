@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { ToastProvider } from "./components/Toast";
 import PageTransition from "./components/PageTransition";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -33,26 +34,32 @@ function AppRoutes() {
           <Route
             path="/"
             element={
-              <PageTransition>
-                <Home />
-              </PageTransition>
+              <ErrorBoundary>
+                <PageTransition>
+                  <Home />
+                </PageTransition>
+              </ErrorBoundary>
             }
           />
           <Route
             path="/schedules/:id"
             element={
-              <PageTransition>
-                <ScheduleDetail />
-              </PageTransition>
+              <ErrorBoundary>
+                <PageTransition>
+                  <ScheduleDetail />
+                </PageTransition>
+              </ErrorBoundary>
             }
           />
           <Route
             path="/schedules/:id/seats"
             element={
               user ? (
-                <PageTransition>
-                  <SeatSelection />
-                </PageTransition>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <SeatSelection />
+                  </PageTransition>
+                </ErrorBoundary>
               ) : (
                 <Navigate to="/login" />
               )
@@ -62,9 +69,11 @@ function AppRoutes() {
             path="/bookings/:id/confirmation"
             element={
               user ? (
-                <PageTransition>
-                  <BookingConfirmation />
-                </PageTransition>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <BookingConfirmation />
+                  </PageTransition>
+                </ErrorBoundary>
               ) : (
                 <Navigate to="/login" />
               )
@@ -74,9 +83,11 @@ function AppRoutes() {
             path="/my-bookings"
             element={
               user ? (
-                <PageTransition>
-                  <MyBookings />
-                </PageTransition>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <MyBookings />
+                  </PageTransition>
+                </ErrorBoundary>
               ) : (
                 <Navigate to="/login" />
               )
@@ -88,9 +99,11 @@ function AppRoutes() {
               user ? (
                 <Navigate to="/" />
               ) : (
-                <PageTransition>
-                  <Login />
-                </PageTransition>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <Login />
+                  </PageTransition>
+                </ErrorBoundary>
               )
             }
           />
@@ -100,9 +113,11 @@ function AppRoutes() {
               user ? (
                 <Navigate to="/" />
               ) : (
-                <PageTransition>
-                  <Register />
-                </PageTransition>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <Register />
+                  </PageTransition>
+                </ErrorBoundary>
               )
             }
           />
