@@ -13,6 +13,21 @@ import {
   isPositiveId,
 } from "../lib/validation.js";
 
+async function getBooking(req, res, next) {
+  try {
+    if (!isPositiveId(req.params.id)) {
+      return sendError(res, 400, "Booking must be a valid id");
+    }
+
+    const booking = await getBookingById(req.params.id);
+    if (!booking) return sendError(res, 404, "Booking not found");
+
+    res.json(booking);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function addBooking(req, res, next) {
   try {
     const { scheduleId, seatNumber } = req.body;
@@ -91,4 +106,4 @@ async function removeBooking(req, res, next) {
   }
 }
 
-export { addBooking, listUserBookings, removeBooking };
+export { addBooking, getBooking, listUserBookings, removeBooking };
