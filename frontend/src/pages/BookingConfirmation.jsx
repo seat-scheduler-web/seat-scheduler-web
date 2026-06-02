@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { useLocation, Link, useParams } from "react-router-dom";
+import { apiRequest } from "../api/client";
 import { useBuyerQueue } from "../context/BuyerQueueContext";
 
 function formatDateTime(dateStr) {
@@ -36,7 +38,6 @@ function PerforatedEdge({ position }) {
 
   return (
     <div className="relative w-full">
-      {/* Dashed line */}
       <div
         className={`absolute left-4 right-4 border-dashed border-base-300 ${
           isTop ? "top-0 border-b" : "bottom-0 border-t"
@@ -46,19 +47,16 @@ function PerforatedEdge({ position }) {
           borderTopWidth: isTop ? "0" : "2px",
         }}
       />
-      {/* Left circle cutout */}
       <div
         className={`absolute w-8 h-8 bg-base-100 rounded-full ${
           isTop ? "-top-4" : "-bottom-4"
         } -left-4`}
       />
-      {/* Right circle cutout */}
       <div
         className={`absolute w-8 h-8 bg-base-100 rounded-full ${
           isTop ? "-top-4" : "-bottom-4"
         } -right-4`}
       />
-      {/* Dots along the perforation */}
       <div className={`flex justify-between px-6 ${isTop ? "pt-0" : "pb-0"}`}>
         {dots.map((i) => (
           <div
@@ -74,7 +72,6 @@ function PerforatedEdge({ position }) {
 }
 
 function QRCodePlaceholder() {
-  // Generate a simple QR-like pattern using a grid of squares
   const gridSize = 7;
   const pattern = [
     [1, 1, 1, 0, 1, 1, 1],
@@ -112,8 +109,35 @@ function QRCodePlaceholder() {
 
 export default function BookingConfirmation() {
   const location = useLocation();
-  const booking = location.state?.booking;
+  const { id } = useParams();
+  const [booking, setBooking] = useState(location.state?.booking || null);
+  const [loading, setLoading] = useState(!location.state?.booking);
+  const [fetchError, setFetchError] = useState("");
   const { advanceQueue } = useBuyerQueue();
+
+  // Fetch booking from API if not in location state (e.g., page refresh)
+  useEffect(() => {
+    if (booking) return;
+
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setFetchError("");
+
+    apiRequest(`/bookings/${id}`)
+      .then((data) => {
+        setBooking(data);
+      })
+      .catch((err) => {
+        setFetchError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [id, booking]);
 
   // Advance the queue when booking is confirmed
   useEffect(() => {
@@ -126,13 +150,23 @@ export default function BookingConfirmation() {
     window.print();
   }
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <span className="loading loading-spinner loading-lg" />
+        <p className="opacity-60">Loading booking details...</p>
+      </div>
+    );
+  }
+
   if (!booking) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="text-6xl">🔍</div>
         <h2 className="text-2xl font-bold">No booking data</h2>
         <p className="opacity-60">
-          This page should be reached after completing a booking.
+          {fetchError ||
+            "This page should be reached after completing a booking."}
         </p>
         <Link to="/" className="btn btn-primary">
           Browse movies
@@ -174,10 +208,8 @@ export default function BookingConfirmation() {
 
       {/* Ticket Card */}
       <div className="bg-base-200 rounded-2xl shadow-lg overflow-hidden print:shadow-none print:border print:border-base-300">
-        {/* Top accent */}
         <div className="h-2 bg-gradient-to-r from-success/60 via-emerald-500/60 to-teal-500/60" />
 
-        {/* Movie Title Section */}
         <div className="px-6 pt-6 pb-4 text-center border-b border-base-300/50">
           <p className="text-xs font-semibold uppercase tracking-widest opacity-40 mb-1">
             Movie
@@ -192,12 +224,9 @@ export default function BookingConfirmation() {
           )}
         </div>
 
-        {/* Perforated edge top */}
         <PerforatedEdge position="top" />
 
-        {/* Ticket Details */}
         <div className="px-6 py-5 space-y-4">
-          {/* Date & Time Row */}
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <p className="text-xs font-semibold uppercase tracking-wider opacity-40">
@@ -227,10 +256,8 @@ export default function BookingConfirmation() {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="border-t border-dashed border-base-300" />
 
-          {/* Seat & Booking ID Row */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider opacity-40">
@@ -250,10 +277,8 @@ export default function BookingConfirmation() {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="border-t border-dashed border-base-300" />
 
-          {/* Status & User Row */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider opacity-40">
@@ -288,15 +313,12 @@ export default function BookingConfirmation() {
           </div>
         </div>
 
-        {/* Perforated edge bottom */}
         <PerforatedEdge position="bottom" />
 
-        {/* QR Code Section */}
         <div className="px-6 py-5 bg-base-300/30 border-t border-base-300/50">
           <QRCodePlaceholder />
         </div>
 
-        {/* Bottom accent */}
         <div className="h-1.5 bg-gradient-to-r from-success/40 via-emerald-500/40 to-teal-500/40" />
       </div>
 
