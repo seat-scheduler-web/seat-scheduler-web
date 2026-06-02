@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useToast } from "../components/Toast";
+import { useUndoStack } from "../context/UndoStackContext";
 import { MyBookingsSkeleton } from "../components/Skeleton";
 
 function formatDateTime(dateStr) {
@@ -18,10 +19,12 @@ function formatDateTime(dateStr) {
 
 export default function MyBookings() {
   const { addToast } = useToast();
+  const { pushUndo, popUndo, peekUndo, getSize } = useUndoStack();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
+  const [undoing, setUndoing] = useState(false);
 
   useEffect(() => {
     apiRequest("/bookings")
@@ -33,13 +36,27 @@ export default function MyBookings() {
   async function handleCancel(bookingId) {
     setCancellingId(bookingId);
     try {
+      // Find the booking before cancelling (to capture data for undo)
+      const booking = bookings.find((b) => b.id === bookingId);
+
       await apiRequest(`/bookings/${bookingId}/cancel`, { method: "PATCH" });
       setBookings((prev) =>
         prev.map((b) =>
           b.id === bookingId ? { ...b, status: "CANCELLED" } : b,
         ),
       );
-      addToast("Booking cancelled successfully", "success");
+
+      // Push undo action onto the stack
+      if (booking) {
+        pushUndo({
+          bookingId: booking.id,
+          scheduleId: booking.schedule?.id,
+          seatNumber: booking.seatNumber,
+          movieTitle: booking.schedule?.movie?.title || "Movie",
+        });
+      }
+
+      addToast("Booking cancelled. Click undo to restore.", "success");
     } catch (err) {
       setError(err.message);
       addToast(err.message, "error");
@@ -47,6 +64,44 @@ export default function MyBookings() {
       setCancellingId(null);
     }
   }
+
+  async function handleUndo() {
+    const action = popUndo();
+    if (!action) return;
+
+    setUndoing(true);
+    try {
+      // Re-book the seat
+      await apiRequest("/bookings", {
+        method: "POST",
+        body: JSON.stringify({
+          scheduleId: action.scheduleId,
+          seatNumber: action.seatNumber,
+        }),
+      });
+
+      // Refresh bookings to show the restored booking
+      const updatedBookings = await apiRequest("/bookings");
+      setBookings(updatedBookings);
+
+      addToast(
+        `Booking restored: ${action.movieTitle} — Seat ${action.seatNumber}`,
+        "success",
+      );
+    } catch (err) {
+      // If re-booking fails (e.g., seat taken), push the action back
+      pushUndo(action);
+      addToast(
+        `Undo failed: ${err.message}. Seat may have been taken.`,
+        "error",
+      );
+    } finally {
+      setUndoing(false);
+    }
+  }
+
+  const lastAction = peekUndo();
+  const stackSize = getSize();
 
   if (loading) {
     return <MyBookingsSkeleton />;
@@ -74,25 +129,91 @@ export default function MyBookings() {
             {bookings.length} booking{bookings.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link
-          to="/"
-          className="btn btn-outline btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-4 h-4"
+        <div className="flex items-center gap-2">
+          {/* Undo Button */}
+          {lastAction && (
+            <button
+              onClick={handleUndo}
+              disabled={undoing}
+              className="btn btn-warning btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
+            >
+              {undoing ? (
+                <>
+                  <span className="loading loading-spinner loading-xs" />
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.793 2.232a.75.75 0 01-.025 1.06L3.622 7.25h10.003a5.375 5.375 0 010 10.75H10.75a.75.75 0 010-1.5h2.875a3.875 3.875 0 000-7.75H3.622l4.146 3.957a.75.75 0 01-1.036 1.085l-5.5-5.25a.75.75 0 010-1.085l5.5-5.25a.75.75 0 011.06.025z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Undo
+                  {stackSize > 1 && (
+                    <span className="badge badge-soft badge-xs">
+                      {stackSize}
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
+          )}
+          <Link
+            to="/"
+            className="btn btn-outline btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
           >
-            <path
-              fillRule="evenodd"
-              d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Browse Movies
-        </Link>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Browse Movies
+          </Link>
+        </div>
       </div>
+
+      {/* Undo Info Banner */}
+      {lastAction && (
+        <div className="card bg-warning/10 border border-warning/30">
+          <div className="card-body p-3">
+            <div className="flex items-center gap-2 text-sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-4 h-4 text-warning shrink-0"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="opacity-70">
+                Last action: Cancelled{" "}
+                <span className="font-semibold">{lastAction.movieTitle}</span> —
+                Seat{" "}
+                <span className="font-semibold">{lastAction.seatNumber}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bookings List */}
       {!bookings.length ? (

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { BuyerQueueProvider } from "./context/BuyerQueueContext";
+import { UndoStackProvider } from "./context/UndoStackContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { ToastProvider } from "./components/Toast";
@@ -117,9 +118,11 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <BuyerQueueProvider>
-          <ToastProvider>
-            <AppRoutes />
-          </ToastProvider>
+          <UndoStackProvider>
+            <ToastProvider>
+              <AppRoutes />
+            </ToastProvider>
+          </UndoStackProvider>
         </BuyerQueueProvider>
       </AuthProvider>
     </BrowserRouter>
