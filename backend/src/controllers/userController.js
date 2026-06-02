@@ -8,11 +8,12 @@ import {
 } from "../models/userModel.js";
 import { sendError } from "../lib/apiResponse.js";
 import { hasRequiredFields } from "../lib/validation.js";
+import { getJwtSecret } from "../lib/jwt.js";
 
 const saltRounds = 10;
 
 function makeToken(user) {
-  return jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret", {
+  return jwt.sign({ id: user.id }, getJwtSecret(), {
     expiresIn: "7d",
   });
 }
@@ -30,8 +31,7 @@ async function registerUser(req, res, next) {
     }
 
     const existingUsername = await getUserByUsername(username);
-    if (existingUsername)
-      return sendError(res, 409, "Username already exists");
+    if (existingUsername) return sendError(res, 409, "Username already exists");
 
     const existingEmail = await getUserByEmail(email);
     if (existingEmail) return sendError(res, 409, "Email already exists");

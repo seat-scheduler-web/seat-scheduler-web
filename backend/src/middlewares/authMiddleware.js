@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { sendError } from "../lib/apiResponse.js";
 import { getUserById } from "../models/userModel.js";
+import { getJwtSecret } from "../lib/jwt.js";
 
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -16,7 +17,7 @@ async function authMiddleware(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || "secret");
+    const payload = jwt.verify(token, getJwtSecret());
 
     const user = await getUserById(payload.id);
     if (!user) return sendError(res, 401, "Invalid auth token");
