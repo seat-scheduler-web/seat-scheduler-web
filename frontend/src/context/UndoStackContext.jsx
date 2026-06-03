@@ -7,15 +7,9 @@ const MAX_STACK_SIZE = 5;
 export function UndoStackProvider({ children }) {
   const [stack, setStack] = useState([]);
 
-  /**
-   * Push an undo action onto the stack.
-   * Each action contains the data needed to re-book a cancelled seat.
-   * Caps the stack at MAX_STACK_SIZE by removing the oldest entry.
-   */
   const pushUndo = useCallback((action) => {
     setStack((prev) => {
       const newStack = [...prev, action];
-      // Cap at MAX_STACK_SIZE — remove oldest (first) items
       if (newStack.length > MAX_STACK_SIZE) {
         return newStack.slice(newStack.length - MAX_STACK_SIZE);
       }
@@ -23,36 +17,21 @@ export function UndoStackProvider({ children }) {
     });
   }, []);
 
-  /**
-   * Pop the last undo action from the stack (LIFO).
-   * Returns the action or undefined if stack is empty.
-   */
   const popUndo = useCallback(() => {
-    let action;
-    setStack((prev) => {
-      if (prev.length === 0) return prev;
-      action = prev[prev.length - 1];
-      return prev.slice(0, -1);
-    });
+    const currentStack = stack;
+    if (currentStack.length === 0) return undefined;
+    const action = currentStack[currentStack.length - 1];
+    setStack(currentStack.slice(0, -1));
     return action;
-  }, []);
+  }, [stack]);
 
-  /**
-   * Peek at the last undo action without removing it.
-   */
   const peekUndo = useCallback(() => {
     if (stack.length === 0) return null;
     return stack[stack.length - 1];
   }, [stack]);
 
-  /**
-   * Get the current stack size.
-   */
   const getSize = useCallback(() => stack.length, [stack]);
 
-  /**
-   * Clear the entire stack.
-   */
   const clearStack = useCallback(() => {
     setStack([]);
   }, []);
