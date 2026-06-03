@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { sendError } from "./lib/apiResponse.js";
 import { prisma } from "./lib/prisma.js";
 import { validateEnv } from "./lib/validateEnv.js";
+import { adminRoutes } from "./routes/adminRoutes.js";
 import { bookingRoutes } from "./routes/bookingRoutes.js";
 import { movieRoutes } from "./routes/movieRoutes.js";
 import { scheduleRoutes } from "./routes/scheduleRoutes.js";
@@ -42,6 +43,7 @@ app.get("/health/db", async (_req, res, next) => {
   }
 });
 
+app.use("/api/admin", adminRoutes);
 app.use("/api/movies", movieRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/bookings", bookingRoutes);
