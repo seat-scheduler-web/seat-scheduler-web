@@ -3,12 +3,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { sendError } from "./lib/apiResponse.js";
 import { prisma } from "./lib/prisma.js";
+import { validateEnv } from "./lib/validateEnv.js";
 import { bookingRoutes } from "./routes/bookingRoutes.js";
 import { movieRoutes } from "./routes/movieRoutes.js";
 import { scheduleRoutes } from "./routes/scheduleRoutes.js";
 import { userRoutes } from "./routes/userRoutes.js";
 
 dotenv.config();
+
+validateEnv();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
