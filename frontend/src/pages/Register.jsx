@@ -2,16 +2,74 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
+function validateEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function validateUsername(username) {
+  const usernameRegex = /^[a-zA-Z0-9]+$/;
+  return usernameRegex.test(username);
+}
+
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [errors, setErrors] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  function validate() {
+    const newErrors = { username: "", email: "", password: "" };
+    let isValid = true;
+
+    if (!form.username.trim()) {
+      newErrors.username = "Username is required";
+      isValid = false;
+    } else if (form.username.length < 3) {
+      newErrors.username = "Username must be at least 3 characters";
+      isValid = false;
+    } else if (form.username.length > 20) {
+      newErrors.username = "Username must be 20 characters or less";
+      isValid = false;
+    } else if (!validateUsername(form.username)) {
+      newErrors.username = "Username can only contain letters and numbers";
+      isValid = false;
+    }
+
+    if (!form.email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!validateEmail(form.email)) {
+      newErrors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    if (!form.password) {
+      newErrors.password = "Password is required";
+      isValid = false;
+    } else if (form.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    if (!validate()) {
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -70,11 +128,25 @@ export default function Register() {
               <input
                 type="text"
                 placeholder="johndoe"
-                className="input input-bordered focus:input-primary transition-colors duration-200"
+                className={`input input-bordered focus:input-primary transition-colors duration-200 ${
+                  errors.username ? "input-error" : ""
+                }`}
                 required
+                minLength={3}
+                maxLength={20}
                 value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, username: e.target.value });
+                  if (errors.username) setErrors({ ...errors, username: "" });
+                }}
               />
+              {errors.username && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.username}
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control mt-2">
@@ -84,11 +156,23 @@ export default function Register() {
               <input
                 type="email"
                 placeholder="you@example.com"
-                className="input input-bordered focus:input-primary transition-colors duration-200"
+                className={`input input-bordered focus:input-primary transition-colors duration-200 ${
+                  errors.email ? "input-error" : ""
+                }`}
                 required
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, email: e.target.value });
+                  if (errors.email) setErrors({ ...errors, email: "" });
+                }}
               />
+              {errors.email && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.email}
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control mt-2">
@@ -98,12 +182,24 @@ export default function Register() {
               <input
                 type="password"
                 placeholder="Min. 6 characters"
-                className="input input-bordered focus:input-primary transition-colors duration-200"
+                className={`input input-bordered focus:input-primary transition-colors duration-200 ${
+                  errors.password ? "input-error" : ""
+                }`}
                 required
                 minLength={6}
                 value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, password: e.target.value });
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
               />
+              {errors.password && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.password}
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control mt-6">

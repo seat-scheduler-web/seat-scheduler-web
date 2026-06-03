@@ -2,16 +2,51 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
+function validateEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  function validate() {
+    const newErrors = { email: "", password: "" };
+    let isValid = true;
+
+    if (!form.email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!validateEmail(form.email)) {
+      newErrors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    if (!form.password) {
+      newErrors.password = "Password is required";
+      isValid = false;
+    } else if (form.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    if (!validate()) {
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -70,11 +105,23 @@ export default function Login() {
               <input
                 type="email"
                 placeholder="you@example.com"
-                className="input input-bordered focus:input-primary transition-colors duration-200"
+                className={`input input-bordered focus:input-primary transition-colors duration-200 ${
+                  errors.email ? "input-error" : ""
+                }`}
                 required
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, email: e.target.value });
+                  if (errors.email) setErrors({ ...errors, email: "" });
+                }}
               />
+              {errors.email && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.email}
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control mt-2">
@@ -84,11 +131,24 @@ export default function Login() {
               <input
                 type="password"
                 placeholder="••••••••"
-                className="input input-bordered focus:input-primary transition-colors duration-200"
+                className={`input input-bordered focus:input-primary transition-colors duration-200 ${
+                  errors.password ? "input-error" : ""
+                }`}
                 required
+                minLength={6}
                 value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, password: e.target.value });
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
               />
+              {errors.password && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.password}
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control mt-6">
