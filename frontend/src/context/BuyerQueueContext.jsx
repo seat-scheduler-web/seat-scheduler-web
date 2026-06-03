@@ -29,28 +29,20 @@ function saveQueuesToStorage(queues) {
 }
 
 export function BuyerQueueProvider({ children }) {
-  // queues is an object: { [scheduleId]: QueueEntry[] }
   const [queues, setQueues] = useState(() => loadQueuesFromStorage());
 
-  // Persist to localStorage whenever queues change
   useEffect(() => {
     saveQueuesToStorage(queues);
   }, [queues]);
 
-  /**
-   * Add a user to the queue for a given schedule.
-   * Returns the queue entry with position.
-   */
   const joinQueue = useCallback((scheduleId, user) => {
     const key = String(scheduleId);
     setQueues((prev) => {
       const queue = prev[key] || [];
-      // Check if user is already in the queue
       const existingIndex = queue.findIndex(
         (entry) => entry.username === user.username,
       );
       if (existingIndex !== -1) {
-        // Already in queue — return existing entry
         return prev;
       }
       const entry = {
@@ -64,30 +56,21 @@ export function BuyerQueueProvider({ children }) {
     });
   }, []);
 
-  /**
-   * Remove the first person from the queue (FIFO dequeue).
-   * Called when a booking is confirmed.
-   * Returns the dequeued entry or null.
-   */
-  const advanceQueue = useCallback((scheduleId) => {
-    const key = String(scheduleId);
-    let dequeued = null;
-    setQueues((prev) => {
-      const queue = prev[key] || [];
-      if (queue.length === 0) return prev;
-      dequeued = queue[0];
-      const newQueue = queue.slice(1);
-      return {
+  const advanceQueue = useCallback(
+    (scheduleId) => {
+      const key = String(scheduleId);
+      const queue = queues[key] || [];
+      if (queue.length === 0) return null;
+      const dequeued = queue[0];
+      setQueues((prev) => ({
         ...prev,
-        [key]: newQueue,
-      };
-    });
-    return dequeued;
-  }, []);
+        [key]: queue.slice(1),
+      }));
+      return dequeued;
+    },
+    [queues],
+  );
 
-  /**
-   * Get the current queue for a schedule.
-   */
   const getQueue = useCallback(
     (scheduleId) => {
       const key = String(scheduleId);
@@ -96,25 +79,18 @@ export function BuyerQueueProvider({ children }) {
     [queues],
   );
 
-  /**
-   * Get the position of a user in the queue (1-indexed).
-   * Returns 0 if not in queue, -1 if first in line.
-   */
   const getPosition = useCallback(
     (scheduleId, username) => {
       const key = String(scheduleId);
       const queue = queues[key] || [];
       const index = queue.findIndex((entry) => entry.username === username);
-      if (index === -1) return 0; // not in queue
-      if (index === 0) return -1; // first in line
-      return index + 1; // 1-indexed position
+      if (index === -1) return 0;
+      if (index === 0) return -1;
+      return index + 1;
     },
     [queues],
   );
 
-  /**
-   * Check if a user is first in line.
-   */
   const isFirstInLine = useCallback(
     (scheduleId, username) => {
       const key = String(scheduleId);
@@ -124,9 +100,6 @@ export function BuyerQueueProvider({ children }) {
     [queues],
   );
 
-  /**
-   * Get the next person in line (first in queue).
-   */
   const getNextInLine = useCallback(
     (scheduleId) => {
       const key = String(scheduleId);
@@ -136,9 +109,6 @@ export function BuyerQueueProvider({ children }) {
     [queues],
   );
 
-  /**
-   * Remove a specific user from the queue (e.g., if they leave the page).
-   */
   const leaveQueue = useCallback((scheduleId, username) => {
     const key = String(scheduleId);
     setQueues((prev) => {
@@ -151,9 +121,6 @@ export function BuyerQueueProvider({ children }) {
     });
   }, []);
 
-  /**
-   * Clear all queues (utility).
-   */
   const clearAllQueues = useCallback(() => {
     setQueues({});
   }, []);
