@@ -1,4 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { BuyerQueueProvider } from "./context/BuyerQueueContext";
 import { UndoStackProvider } from "./context/UndoStackContext";
@@ -14,6 +21,7 @@ import ScheduleDetail from "./pages/ScheduleDetail";
 import SeatSelection from "./pages/SeatSelection";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
+import { useEffect } from "react";
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -128,13 +136,31 @@ function AppRoutes() {
   );
 }
 
+// Handle GitHub Pages 404.html redirect
+// Converts URLs like /seat-scheduler-web/?/some-path back to /seat-scheduler-web/some-path
+function GitHubPagesRedirect() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const search = location.search;
+    if (search && search.startsWith("?/")) {
+      const path = search.slice(2).replace(/~and~/g, "&");
+      navigate(path, { replace: true });
+    }
+  }, [location, navigate]);
+
+  return null;
+}
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/seat-scheduler-web">
       <AuthProvider>
         <BuyerQueueProvider>
           <UndoStackProvider>
             <ToastProvider>
+              <GitHubPagesRedirect />
               <AppRoutes />
             </ToastProvider>
           </UndoStackProvider>
