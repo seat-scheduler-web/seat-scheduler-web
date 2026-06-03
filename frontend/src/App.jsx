@@ -14,6 +14,7 @@ import Footer from "./components/Footer";
 import { ToastProvider } from "./components/Toast";
 import PageTransition from "./components/PageTransition";
 import ErrorBoundary from "./components/ErrorBoundary";
+import AdminRoute from "./components/AdminRoute";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -21,6 +22,9 @@ import ScheduleDetail from "./pages/ScheduleDetail";
 import SeatSelection from "./pages/SeatSelection";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
+import AdminMovies from "./pages/admin/Movies";
+import AdminSchedules from "./pages/admin/Schedules";
+import AdminBookings from "./pages/admin/Bookings";
 import { useEffect } from "react";
 
 function AppRoutes() {
@@ -127,6 +131,44 @@ function AppRoutes() {
                   </PageTransition>
                 </ErrorBoundary>
               )
+            }
+          />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <AdminMovies />
+                  </PageTransition>
+                </ErrorBoundary>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/schedules"
+            element={
+              <AdminRoute>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <AdminSchedules />
+                  </PageTransition>
+                </ErrorBoundary>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/bookings"
+            element={
+              <AdminRoute>
+                <ErrorBoundary>
+                  <PageTransition>
+                    <AdminBookings />
+                  </PageTransition>
+                </ErrorBoundary>
+              </AdminRoute>
             }
           />
         </Routes>

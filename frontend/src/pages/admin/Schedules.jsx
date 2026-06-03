@@ -1,0 +1,223 @@
+import { useState, useEffect } from "react";
+import { apiRequest } from "../../api/client";
+import AdminLayout from "./AdminLayout";
+
+function ScheduleForm({ onSubmit, onCancel }) {
+  const [form, setForm] = useState({
+    movieId: "",
+    showTime: "",
+    studio: "",
+  });
+  const [movies, setMovies] = useState([]);
+
+  useEffect(() => {
+    apiRequest("/movies").then(setMovies).catch(console.error);
+  }, []);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    onSubmit({
+      ...form,
+      movieId: Number(form.movieId),
+    });
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="bg-base-100 rounded-lg shadow-sm p-6"
+    >
+      <h3 className="text-lg font-semibold mb-4">Add New Schedule</h3>
+
+      <div className="space-y-4">
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text">Movie *</span>
+          </label>
+          <select
+            className="select select-bordered"
+            value={form.movieId}
+            onChange={(e) => setForm({ ...form, movieId: e.target.value })}
+            required
+          >
+            <option value="">Select a movie</option>
+            {movies.map((movie) => (
+              <option key={movie.id} value={movie.id}>
+                {movie.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text">Show Time *</span>
+          </label>
+          <input
+            type="datetime-local"
+            className="input input-bordered"
+            value={form.showTime}
+            onChange={(e) => setForm({ ...form, showTime: e.target.value })}
+            required
+          />
+        </div>
+
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text">Studio *</span>
+          </label>
+          <input
+            type="text"
+            className="input input-bordered"
+            value={form.studio}
+            onChange={(e) => setForm({ ...form, studio: e.target.value })}
+            placeholder="e.g., Studio 1"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2 mt-6">
+        <button type="submit" className="btn btn-primary">
+          Add Schedule
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function formatDateTime(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export default function Schedules() {
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    loadSchedules();
+  }, []);
+
+  async function loadSchedules() {
+    try {
+      const data = await apiRequest("/schedules");
+      setSchedules(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSubmit(formData) {
+    try {
+      await apiRequest("/schedules", {
+        method: "POST",
+        body: JSON.stringify(formData),
+      });
+      setShowForm(false);
+      loadSchedules();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!confirm("Are you sure you want to delete this schedule?")) return;
+
+    try {
+      await apiRequest(`/admin/schedules/${id}`, { method: "DELETE" });
+      loadSchedules();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center py-12">
+          <span className="loading loading-spinner loading-lg" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Schedules</h2>
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            + Add Schedule
+          </button>
+        </div>
+
+        {error && (
+          <div className="alert alert-error">
+            <span>{error}</span>
+          </div>
+        )}
+
+        {showForm && (
+          <ScheduleForm
+            onSubmit={handleSubmit}
+            onCancel={() => setShowForm(false)}
+          />
+        )}
+
+        <div className="bg-base-100 rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Movie</th>
+                  <th>Show Time</th>
+                  <th>Studio</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedules.map((schedule) => (
+                  <tr key={schedule.id}>
+                    <td className="font-medium">
+                      {schedule.movie?.title || `Movie #${schedule.movieId}`}
+                    </td>
+                    <td>{formatDateTime(schedule.showTime)}</td>
+                    <td>{schedule.studio}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-error btn-outline"
+                        onClick={() => handleDelete(schedule.id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {schedules.length === 0 && (
+            <div className="text-center py-12 text-base-content/50">
+              No schedules found. Add your first schedule!
+            </div>
+          )}
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
