@@ -273,14 +273,14 @@ Add much more seed data to make the site feel alive. Include a LOT of movies, sc
 
 ## checklist
 
-- [ ] Add 50+ movies with complete data (title, description, duration, genre, posterUrl)
-- [ ] Add 100+ schedules with varied showtimes and studios
-- [ ] Add 200+ bookings with different statuses
-- [ ] Include diverse genres (Action, Comedy, Drama, Horror, Sci-Fi, Romance, etc.)
-- [ ] Add realistic movie descriptions
-- [ ] Add varied pricing across schedules
-- [ ] Create multiple admin users for testing
-- [ ] Document seed data structure in README
+- [x] Add 50+ movies with complete data (title, description, duration, genre, posterUrl)
+- [x] Add 100+ schedules with varied showtimes and studios
+- [x] Add 200+ bookings with different statuses
+- [x] Include diverse genres (Action, Comedy, Drama, Horror, Sci-Fi, Romance, etc.)
+- [x] Add realistic movie descriptions
+- [x] Add varied pricing across schedules
+- [x] Create multiple admin users for testing
+- [x] Document seed data structure in README
 
 ## labels
 
