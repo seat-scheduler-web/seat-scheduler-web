@@ -264,7 +264,29 @@ docs, chore
 
 ---
 
-## Day 5 (June 7): 🎨 UX Polish & Navigation
+## Day 5 (June 7): 🌱 Foundation - Seed Data & Quick UX Wins
+
+### [chore] expand-seed-data
+
+**description**
+Add much more seed data to make the site feel alive. Include a LOT of movies, schedules, and bookings with every field filled.
+
+## checklist
+
+- [ ] Add 50+ movies with complete data (title, description, duration, genre, posterUrl)
+- [ ] Add 100+ schedules with varied showtimes and studios
+- [ ] Add 200+ bookings with different statuses
+- [ ] Include diverse genres (Action, Comedy, Drama, Horror, Sci-Fi, Romance, etc.)
+- [ ] Add realistic movie descriptions
+- [ ] Add varied pricing across schedules
+- [ ] Create multiple admin users for testing
+- [ ] Document seed data structure in README
+
+## labels
+
+chore, data, content
+
+---
 
 ### [ux] add-navigation-to-all-routes
 
@@ -305,43 +327,6 @@ ux, frontend, feedback
 
 ---
 
-### [feature] add-seat-pricing
-
-**description**
-Add pricing to seat booking to make it feel realistic. Different seat types (regular, premium) should have different prices.
-
-## checklist
-
-- [ ] Add price field to schedule model
-- [ ] Display price on seat selection page
-- [ ] Calculate total price based on selected seats
-- [ ] Show price breakdown in booking confirmation
-- [ ] Add pricing tiers (e.g., regular vs premium seats)
-
-## labels
-
-feature, frontend, backend
-
----
-
-### [bug] fix-search-filter-ui
-
-**description**
-The search and filter UI has layout issues. Controls are not properly aligned and the mobile experience is poor.
-
-## checklist
-
-- [ ] Fix alignment of search input and filter dropdowns
-- [ ] Improve mobile responsiveness of filter controls
-- [ ] Add clear visual hierarchy between search and filters
-- [ ] Ensure filter state is visually indicated when active
-
-## labels
-
-bug, frontend, ui
-
----
-
 ### [ux] add-loading-skeletons
 
 **description**
@@ -377,6 +362,8 @@ Lists show blank space when empty. Add helpful empty states with calls to action
 ux, frontend
 
 ---
+
+## Day 6 (June 8): 🎨 Content & Discovery
 
 ### [feature] add-content-sections
 
@@ -419,81 +406,59 @@ feature, frontend, ux
 
 ---
 
-## Day 6 (June 8): 🚀 DevOps & CI/CD
-
-### [chore] setup-github-actions-ci
+### [bug] fix-search-filter-ui
 
 **description**
-Add CI/CD pipeline with GitHub Actions for automated testing and deployment.
+The search and filter UI has layout issues. Controls are not properly aligned and the mobile experience is poor.
 
 ## checklist
 
-- [ ] Create GitHub Actions workflow for running tests on push/PR
-- [ ] Add frontend build verification
-- [ ] Add backend test execution
-- [ ] Configure deployment to GitHub Pages on merge to main
-- [ ] Add status badges to README
+- [ ] Fix alignment of search input and filter dropdowns
+- [ ] Improve mobile responsiveness of filter controls
+- [ ] Add clear visual hierarchy between search and filters
+- [ ] Ensure filter state is visually indicated when active
 
 ## labels
 
-chore, devops, ci-cd
+bug, frontend, ui
 
 ---
 
-### [chore] add-docker-support
+### [feature] add-seat-pricing
 
 **description**
-Add Docker configuration for easy local development and deployment.
+Add pricing to seat booking to make it feel realistic. Different seat types (regular, premium) should have different prices.
 
 ## checklist
 
-- [ ] Create Dockerfile for backend
-- [ ] Create Dockerfile for frontend
-- [ ] Create docker-compose.yml for full stack
-- [ ] Add .dockerignore files
-- [ ] Document Docker setup in README
+- [ ] Add price field to schedule model
+- [ ] Display price on seat selection page
+- [ ] Calculate total price based on selected seats
+- [ ] Show price breakdown in booking confirmation
+- [ ] Add pricing tiers (e.g., regular vs premium seats)
 
 ## labels
 
-chore, devops, docker
-
----
-
-### [chore] add-health-check-endpoints
-
-**description**
-Add comprehensive health check endpoints for monitoring and deployment verification.
-
-## checklist
-
-- [ ] Add detailed health check endpoint with database status
-- [ ] Add readiness probe endpoint
-- [ ] Add liveness probe endpoint
-- [ ] Document health check endpoints in API docs
-
-## labels
-
-chore, backend, monitoring
+feature, frontend, backend
 
 ---
 
 ## Day 7 (June 9): 🔍 Performance & Optimization
 
-### [enhancement] add-api-response-caching
+### [enhancement] add-debounce-to-search
 
 **description**
-API responses are not cached, causing unnecessary database queries. Add caching for frequently accessed data.
+Search triggers API call on every keystroke. Add debouncing to reduce API calls.
 
 ## checklist
 
-- [ ] Add in-memory caching for movie list
-- [ ] Add cache invalidation on movie/schedule changes
-- [ ] Add cache headers for API responses
-- [ ] Document caching strategy
+- [ ] Add debounce to search input (300ms)
+- [ ] Cancel pending requests on new input
+- [ ] Show loading indicator during search
 
 ## labels
 
-enhancement, backend, performance
+enhancement, frontend, performance
 
 ---
 
@@ -515,6 +480,24 @@ enhancement, frontend, performance
 
 ---
 
+### [enhancement] add-api-response-caching
+
+**description**
+API responses are not cached, causing unnecessary database queries. Add caching for frequently accessed data.
+
+## checklist
+
+- [ ] Add in-memory caching for movie list
+- [ ] Add cache invalidation on movie/schedule changes
+- [ ] Add cache headers for API responses
+- [ ] Document caching strategy
+
+## labels
+
+enhancement, backend, performance
+
+---
+
 ### [enhancement] add-pagination
 
 **description**
@@ -530,23 +513,6 @@ Lists load all items at once. Add pagination for better performance with large d
 ## labels
 
 enhancement, frontend, backend
-
----
-
-### [enhancement] add-debounce-to-search
-
-**description**
-Search triggers API call on every keystroke. Add debouncing to reduce API calls.
-
-## checklist
-
-- [ ] Add debounce to search input (300ms)
-- [ ] Cancel pending requests on new input
-- [ ] Show loading indicator during search
-
-## labels
-
-enhancement, frontend, performance
 
 ---
 
@@ -623,7 +589,65 @@ security, backend
 
 ---
 
-## Day 9 (June 11): 📊 Analytics & Monitoring
+## Day 9 (June 11): 🚀 DevOps & CI/CD
+
+### [chore] setup-github-actions-ci
+
+**description**
+Add CI/CD pipeline with GitHub Actions for automated testing and deployment.
+
+## checklist
+
+- [ ] Create GitHub Actions workflow for running tests on push/PR
+- [ ] Add frontend build verification
+- [ ] Add backend test execution
+- [ ] Configure deployment to GitHub Pages on merge to main
+- [ ] Add status badges to README
+
+## labels
+
+chore, devops, ci-cd
+
+---
+
+### [chore] add-docker-support
+
+**description**
+Add Docker configuration for easy local development and deployment.
+
+## checklist
+
+- [ ] Create Dockerfile for backend
+- [ ] Create Dockerfile for frontend
+- [ ] Create docker-compose.yml for full stack
+- [ ] Add .dockerignore files
+- [ ] Document Docker setup in README
+
+## labels
+
+chore, devops, docker
+
+---
+
+### [chore] add-health-check-endpoints
+
+**description**
+Add comprehensive health check endpoints for monitoring and deployment verification.
+
+## checklist
+
+- [ ] Add detailed health check endpoint with database status
+- [ ] Add readiness probe endpoint
+- [ ] Add liveness probe endpoint
+- [ ] Document health check endpoints in API docs
+
+## labels
+
+chore, backend, monitoring
+
+---
+
+## Day 10 (June 12): 📊 Analytics & Monitoring
 
 ### [feature] add-analytics-tracking
 
@@ -681,7 +705,7 @@ feature, backend, admin
 
 ---
 
-## Day 10 (June 12): 🎯 Final Polish & Launch
+## Day 11 (June 13): 🎯 Final Polish & Launch
 
 ### [ux] add-keyboard-navigation
 
@@ -792,119 +816,19 @@ chore, performance
 
 ---
 
-## Day 11 (June 13): 🌱 Seed Data & Content
-
-### [chore] expand-seed-data
-
-**description**
-Add much more seed data to make the site feel alive. Include a LOT of movies, schedules, and bookings with every field filled.
-
-## checklist
-
-- [ ] Add 50+ movies with complete data (title, description, duration, genre, posterUrl)
-- [ ] Add 100+ schedules with varied showtimes and studios
-- [ ] Add 200+ bookings with different statuses
-- [ ] Include diverse genres (Action, Comedy, Drama, Horror, Sci-Fi, Romance, etc.)
-- [ ] Add realistic movie descriptions
-- [ ] Add varied pricing across schedules
-- [ ] Create multiple admin users for testing
-- [ ] Document seed data structure in README
-
-## labels
-
-chore, data, content
-
----
-
-### [feature] add-movie-ratings
-
-**description**
-Add movie rating system so users can rate movies and see average ratings.
-
-## checklist
-
-- [ ] Add rating field to movie model
-- [ ] Create rating submission endpoint
-- [ ] Display average rating on movie cards
-- [ ] Add rating filter/sort options
-- [ ] Show user's own rating if exists
-
-## labels
-
-feature, frontend, backend
-
----
-
-### [feature] add-movie-reviews
-
-**description**
-Allow users to write and read movie reviews.
-
-## checklist
-
-- [ ] Create review model and migration
-- [ ] Add review submission endpoint
-- [ ] Display reviews on movie detail page
-- [ ] Add review moderation for admins
-- [ ] Show review count on movie cards
-
-## labels
-
-feature, frontend, backend
-
----
-
-### [feature] add-watchlist
-
-**description**
-Allow users to save movies to a watchlist for later booking.
-
-## checklist
-
-- [ ] Create watchlist model and migration
-- [ ] Add/remove watchlist endpoints
-- [ ] Display watchlist on profile page
-- [ ] Add watchlist button to movie cards
-- [ ] Show watchlist count in navbar
-
-## labels
-
-feature, frontend, backend
-
----
-
-### [feature] add-notifications
-
-**description**
-Add notification system for booking reminders, new movies, etc.
-
-## checklist
-
-- [ ] Create notification model and migration
-- [ ] Add notification creation endpoints
-- [ ] Display notification bell in navbar
-- [ ] Add notification preferences
-- [ ] Send booking reminder notifications
-
-## labels
-
-feature, frontend, backend
-
----
-
 ## Summary
 
-| Day       | Date    | Issues | Focus                      |
-| --------- | ------- | ------ | -------------------------- |
-| Day 1     | June 3  | 4      | Security & Reliability     |
-| Day 2     | June 4  | 4      | Bug Fixes & Validation     |
-| Day 3     | June 5  | 3      | Testing & Quality          |
-| Day 4     | June 6  | 3      | Features & Ship            |
-| Day 5     | June 7  | 8      | UX Polish & Navigation     |
-| Day 6     | June 8  | 3      | DevOps & CI/CD             |
-| Day 7     | June 9  | 4      | Performance & Optimization |
-| Day 8     | June 10 | 4      | Security Hardening         |
-| Day 9     | June 11 | 3      | Analytics & Monitoring     |
-| Day 10    | June 12 | 5      | Final Polish & Launch      |
-| Day 11    | June 13 | 4      | Seed Data & Content        |
-| **Total** |         | **45** |                            |
+| Day       | Date    | Issues | Focus                                  |
+| --------- | ------- | ------ | -------------------------------------- |
+| Day 1     | June 3  | 4      | Security & Reliability                 |
+| Day 2     | June 4  | 4      | Bug Fixes & Validation                 |
+| Day 3     | June 5  | 3      | Testing & Quality                      |
+| Day 4     | June 6  | 3      | Features & Ship                        |
+| Day 5     | June 7  | 5      | Foundation - Seed Data & Quick UX Wins |
+| Day 6     | June 8  | 4      | Content & Discovery                    |
+| Day 7     | June 9  | 4      | Performance & Optimization             |
+| Day 8     | June 10 | 4      | Security Hardening                     |
+| Day 9     | June 11 | 3      | DevOps & CI/CD                         |
+| Day 10    | June 12 | 3      | Analytics & Monitoring                 |
+| Day 11    | June 13 | 5      | Final Polish & Launch                  |
+| **Total** |         | **42** |                                        |
