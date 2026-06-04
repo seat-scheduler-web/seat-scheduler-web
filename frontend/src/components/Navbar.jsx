@@ -65,12 +65,30 @@ export default function Navbar() {
               </div>
               <ul
                 tabIndex={0}
-                className="dropdown-content menu bg-base-100 rounded-box z-10 w-48 p-2 shadow-lg mt-2"
+                className="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-lg mt-2"
               >
                 <li className="menu-title">
                   <span className="text-xs opacity-50">
-                    Signed in as {user.username}
+                    Signed in as <strong>{user.username}</strong>
+                    {user.role === "ADMIN" && (
+                      <span className="badge badge-xs badge-primary ml-1">
+                        ADMIN
+                      </span>
+                    )}
                   </span>
+                </li>
+                <li>
+                  <Link to="/profile" className="gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-4 h-4"
+                    >
+                      <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
+                    </svg>
+                    My Profile
+                  </Link>
                 </li>
                 <li>
                   <Link to="/my-bookings" className="gap-2">
@@ -89,6 +107,28 @@ export default function Navbar() {
                     My Bookings
                   </Link>
                 </li>
+                {user.role === "ADMIN" && (
+                  <>
+                    <div className="divider my-1" />
+                    <li>
+                      <Link to="/admin" className="gap-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="w-4 h-4"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-5.5-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM10 12a5.99 5.99 0 00-4.793 2.39A6.483 6.483 0 0010 16.5a6.483 6.483 0 004.793-2.11A5.99 5.99 0 0010 12z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Admin Dashboard
+                      </Link>
+                    </li>
+                  </>
+                )}
                 <div className="divider my-1" />
                 <li>
                   <button onClick={logout} className="gap-2 text-error">
