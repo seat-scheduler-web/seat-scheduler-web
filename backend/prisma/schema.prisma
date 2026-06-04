@@ -24,7 +24,7 @@ model User {
 model Movie {
   id          Int     @id @default(autoincrement())
   title       String
-  description String?
+  description String? @db.Text
   duration    Int
   genre       String?
   posterUrl   String?

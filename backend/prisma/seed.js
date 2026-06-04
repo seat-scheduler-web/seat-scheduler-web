@@ -945,6 +945,26 @@ async function seedBookings(users, schedules) {
 // ─── Main ───────────────────────────────────────────────────────────────────
 
 async function main() {
+  // ─── Reset Database ──────────────────────────────────────────────────────
+
+  console.log("Resetting database...");
+
+  console.log("  Deleting bookings...");
+  await prisma.booking.deleteMany();
+
+  console.log("  Deleting schedules...");
+  await prisma.schedule.deleteMany();
+
+  console.log("  Deleting movies...");
+  await prisma.movie.deleteMany();
+
+  console.log("  Deleting users...");
+  await prisma.user.deleteMany();
+
+  console.log("  Database reset complete.\n");
+
+  // ─── Seed Data ───────────────────────────────────────────────────────────
+
   console.log("Seeding users...");
   const users = await seedUsers();
   console.log(`  Created ${users.length} users (3 admins, 53 regular users)`);
@@ -961,7 +981,7 @@ async function main() {
   const bookings = await seedBookings(users, schedules);
   console.log(`  Created ${bookings.length} bookings`);
 
-  console.log("\n✅ Seed data created successfully!");
+  console.log("\n✅ Database reset and seeded successfully!");
   console.log("\n─── Login Credentials ───");
   console.log("Admin:  admin@example.com / password123");
   console.log("Admin:  superadmin@example.com / password123");
