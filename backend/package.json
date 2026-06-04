@@ -5,6 +5,7 @@
   "main": "src/app.js",
   "scripts": {
     "seed": "node prisma/seed.js",
+    "reset": "npx prisma migrate deploy && npm run seed",
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "nodemon src/app.js",
