@@ -22,6 +22,7 @@ import ScheduleDetail from "./pages/ScheduleDetail";
 import SeatSelection from "./pages/SeatSelection";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
+import Profile from "./pages/Profile";
 import AdminMovies from "./pages/admin/Movies";
 import AdminSchedules from "./pages/admin/Schedules";
 import AdminBookings from "./pages/admin/Bookings";
@@ -98,6 +99,20 @@ function AppRoutes() {
                 <ErrorBoundary>
                   <PageTransition>
                     <MyBookings />
+                  </PageTransition>
+                </ErrorBoundary>
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              user ? (
+                <ErrorBoundary>
+                  <PageTransition>
+                    <Profile />
                   </PageTransition>
                 </ErrorBoundary>
               ) : (

@@ -38,4 +38,18 @@ async function getUserById(id) {
   });
 }
 
-export { createUser, getUserByEmail, getUserById, getUserByUsername };
+async function updateUser(id, data) {
+  return prisma.user.update({
+    where: { id: Number(id) },
+    data,
+    select: userResponse,
+  });
+}
+
+export {
+  createUser,
+  getUserByEmail,
+  getUserById,
+  getUserByUsername,
+  updateUser,
+};
