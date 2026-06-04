@@ -295,11 +295,11 @@ Many routes are only accessible via URL (profile, admin, my-bookings). Add clear
 
 ## checklist
 
-- [ ] Add profile link to navbar/dropdown menu
-- [ ] Add admin link for admin users
-- [ ] Add "My Bookings" link to navbar
-- [ ] Ensure all pages have clear navigation paths
-- [ ] Add breadcrumbs or back buttons where appropriate
+- [x] Add profile link to navbar/dropdown menu
+- [x] Add admin link for admin users
+- [x] Add "My Bookings" link to navbar
+- [x] Ensure all pages have clear navigation paths
+- [x] Add breadcrumbs or back buttons where appropriate
 
 ## labels
 
