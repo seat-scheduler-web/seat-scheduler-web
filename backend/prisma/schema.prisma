@@ -39,6 +39,7 @@ model Schedule {
   movieId  Int
   showTime DateTime
   studio   String
+  price    Float    @default(35000)
 
   movie    Movie     @relation(fields: [movieId], references: [id])
   bookings Booking[]

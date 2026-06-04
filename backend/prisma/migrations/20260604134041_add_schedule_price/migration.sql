@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Schedule` ADD COLUMN `price` DOUBLE NOT NULL DEFAULT 35000;
