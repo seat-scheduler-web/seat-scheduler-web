@@ -5,6 +5,7 @@ import {
   getUserByEmail,
   getUserById,
   getUserByUsername,
+  updateUser,
 } from "../models/userModel.js";
 import { sendError } from "../lib/apiResponse.js";
 import { hasRequiredFields } from "../lib/validation.js";
@@ -95,4 +96,84 @@ async function getCurrentUser(req, res, next) {
   }
 }
 
-export { getCurrentUser, loginUser, registerUser };
+async function updateProfile(req, res, next) {
+  try {
+    const { username, email } = req.body;
+    const userId = req.userId;
+
+    if (!hasRequiredFields(req.body, ["username", "email"])) {
+      return sendError(res, 400, "Username and email are required");
+    }
+
+    // Check if username is taken by another user
+    const existingUsername = await getUserByUsername(username);
+    if (existingUsername && existingUsername.id !== userId) {
+      return sendError(res, 409, "Username already exists");
+    }
+
+    // Check if email is taken by another user
+    const existingEmail = await getUserByEmail(email);
+    if (existingEmail && existingEmail.id !== userId) {
+      return sendError(res, 409, "Email already exists");
+    }
+
+    const user = await updateUser(userId, { username, email });
+
+    res.json({
+      message: "Profile updated",
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.userId;
+
+    if (!hasRequiredFields(req.body, ["currentPassword", "newPassword"])) {
+      return sendError(
+        res,
+        400,
+        "Current password and new password are required",
+      );
+    }
+
+    if (newPassword.length < 6) {
+      return sendError(res, 400, "New password must be at least 6 characters");
+    }
+
+    // Get user with password
+    const user = await getUserByEmail(req.user.email);
+    if (!user) return sendError(res, 404, "User not found");
+
+    // Verify current password
+    const passwordMatches = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
+    if (!passwordMatches) {
+      return sendError(res, 401, "Current password is incorrect");
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    await updateUser(userId, { password: hashedPassword });
+
+    res.json({
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export {
+  changePassword,
+  getCurrentUser,
+  loginUser,
+  registerUser,
+  updateProfile,
+};
