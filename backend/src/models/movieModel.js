@@ -1,17 +1,36 @@
 import { prisma } from "../lib/prisma.js";
 
-const includeSchedules = { schedules: true };
+const includeSchedules = { schedules: { orderBy: { showTime: "asc" } } };
 
-async function createMovie({ title, description, duration, schedules = [] }) {
+const includeSchedulesWithBookings = {
+  schedules: {
+    orderBy: { showTime: "asc" },
+    include: {
+      bookings: true,
+    },
+  },
+};
+
+async function createMovie({
+  title,
+  description,
+  duration,
+  genre,
+  posterUrl,
+  schedules = [],
+}) {
   return prisma.movie.create({
     data: {
       title,
       description,
       duration: Number(duration),
+      genre,
+      posterUrl,
       schedules: {
         create: schedules.map((schedule) => ({
           showTime: new Date(schedule.showTime),
           studio: schedule.studio,
+          price: schedule.price ? Number(schedule.price) : 35000,
         })),
       },
     },
@@ -21,8 +40,32 @@ async function createMovie({ title, description, duration, schedules = [] }) {
 
 async function getMovies() {
   return prisma.movie.findMany({
-    include: includeSchedules,
+    include: includeSchedulesWithBookings,
   });
+}
+
+async function getMoviesWithBookingCounts() {
+  const movies = await prisma.movie.findMany({
+    include: {
+      schedules: {
+        orderBy: { showTime: "asc" },
+        include: {
+          bookings: true,
+        },
+      },
+    },
+  });
+
+  return movies.map((movie) => ({
+    ...movie,
+    bookingCount: movie.schedules.reduce(
+      (count, schedule) => count + schedule.bookings.length,
+      0,
+    ),
+    futureSchedules: movie.schedules.filter(
+      (s) => new Date(s.showTime) > new Date(),
+    ).length,
+  }));
 }
 
 async function getMovieById(id) {
@@ -32,7 +75,10 @@ async function getMovieById(id) {
   });
 }
 
-async function updateMovie(id, { title, description, duration }) {
+async function updateMovie(
+  id,
+  { title, description, duration, genre, posterUrl },
+) {
   const movie = await getMovieById(id);
 
   if (!movie) return null;
@@ -43,6 +89,8 @@ async function updateMovie(id, { title, description, duration }) {
       title,
       description,
       duration: duration === undefined ? undefined : Number(duration),
+      genre,
+      posterUrl,
     },
     include: includeSchedules,
   });
@@ -63,4 +111,11 @@ async function deleteMovie(id) {
   });
 }
 
-export { createMovie, deleteMovie, getMovieById, getMovies, updateMovie };
+export {
+  createMovie,
+  deleteMovie,
+  getMovieById,
+  getMovies,
+  getMoviesWithBookingCounts,
+  updateMovie,
+};

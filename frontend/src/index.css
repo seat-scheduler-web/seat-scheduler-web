@@ -3,3 +3,13 @@
   themes: false;
 }
 @plugin "./catppuccinTheme.mocha.ts";
+
+/* Hide scrollbar for horizontal scroll sections */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
