@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "../../api/client";
+import { useToast } from "../../components/Toast";
 import AdminLayout from "./AdminLayout";
 
 function ScheduleForm({ onSubmit, onCancel }) {
@@ -7,6 +8,7 @@ function ScheduleForm({ onSubmit, onCancel }) {
     movieId: "",
     showTime: "",
     studio: "",
+    price: "",
   });
   const [movies, setMovies] = useState([]);
 
@@ -19,6 +21,7 @@ function ScheduleForm({ onSubmit, onCancel }) {
     onSubmit({
       ...form,
       movieId: Number(form.movieId),
+      price: form.price ? Number(form.price) : undefined,
     });
   }
 
@@ -75,6 +78,20 @@ function ScheduleForm({ onSubmit, onCancel }) {
             required
           />
         </div>
+
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text">Price (IDR)</span>
+          </label>
+          <input
+            type="number"
+            className="input input-bordered"
+            value={form.price}
+            onChange={(e) => setForm({ ...form, price: e.target.value })}
+            placeholder="e.g., 35000"
+            min="0"
+          />
+        </div>
       </div>
 
       <div className="flex gap-2 mt-6">
@@ -101,9 +118,9 @@ function formatDateTime(dateStr) {
 }
 
 export default function Schedules() {
+  const { addToast } = useToast();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -115,7 +132,7 @@ export default function Schedules() {
       const data = await apiRequest("/schedules");
       setSchedules(data);
     } catch (err) {
-      setError(err.message);
+      addToast(`Failed to load schedules: ${err.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -127,10 +144,11 @@ export default function Schedules() {
         method: "POST",
         body: JSON.stringify(formData),
       });
+      addToast("Schedule created successfully", "success");
       setShowForm(false);
       loadSchedules();
     } catch (err) {
-      setError(err.message);
+      addToast(err.message, "error");
     }
   }
 
@@ -138,10 +156,15 @@ export default function Schedules() {
     if (!confirm("Are you sure you want to delete this schedule?")) return;
 
     try {
+      const schedule = schedules.find((s) => s.id === id);
       await apiRequest(`/admin/schedules/${id}`, { method: "DELETE" });
+      addToast(
+        `Schedule for "${schedule?.movie?.title}" deleted successfully`,
+        "success",
+      );
       loadSchedules();
     } catch (err) {
-      setError(err.message);
+      addToast(err.message, "error");
     }
   }
 
@@ -165,12 +188,6 @@ export default function Schedules() {
           </button>
         </div>
 
-        {error && (
-          <div className="alert alert-error">
-            <span>{error}</span>
-          </div>
-        )}
-
         {showForm && (
           <ScheduleForm
             onSubmit={handleSubmit}
@@ -186,6 +203,7 @@ export default function Schedules() {
                   <th>Movie</th>
                   <th>Show Time</th>
                   <th>Studio</th>
+                  <th>Price</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -197,6 +215,11 @@ export default function Schedules() {
                     </td>
                     <td>{formatDateTime(schedule.showTime)}</td>
                     <td>{schedule.studio}</td>
+                    <td>
+                      {schedule.price
+                        ? `IDR ${Number(schedule.price).toLocaleString()}`
+                        : "—"}
+                    </td>
                     <td>
                       <button
                         className="btn btn-sm btn-error btn-outline"
