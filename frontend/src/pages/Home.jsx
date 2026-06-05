@@ -56,6 +56,10 @@ const SORT_OPTIONS = [
   { value: "duration-asc", label: "Duration (Shortest)" },
   { value: "duration-desc", label: "Duration (Longest)" },
   { value: "newest", label: "Newest" },
+  { value: "price-asc", label: "Price (Low to High)" },
+  { value: "price-desc", label: "Price (High to Low)" },
+  { value: "popularity", label: "Most Popular" },
+  { value: "rating", label: "Highest Rated" },
 ];
 
 const DURATION_FILTERS = [
@@ -63,6 +67,20 @@ const DURATION_FILTERS = [
   { value: "short", label: "Short (< 90 min)" },
   { value: "medium", label: "Medium (90-150 min)" },
   { value: "long", label: "Long (> 150 min)" },
+];
+
+const PRICE_FILTERS = [
+  { value: "all", label: "All Prices" },
+  { value: "low", label: "Under Rp 40,000" },
+  { value: "medium", label: "Rp 40,000 - Rp 60,000" },
+  { value: "high", label: "Above Rp 60,000" },
+];
+
+const TIME_FILTERS = [
+  { value: "all", label: "All Times" },
+  { value: "morning", label: "Morning (6AM - 12PM)" },
+  { value: "afternoon", label: "Afternoon (12PM - 6PM)" },
+  { value: "evening", label: "Evening (6PM+)" },
 ];
 
 function getGenreColor(genre) {
@@ -376,7 +394,21 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [durationFilter, setDurationFilter] = useState("all");
+  const [priceFilter, setPriceFilter] = useState("all");
+  const [studioFilter, setStudioFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Get unique studios from movies
+  const availableStudios = useMemo(() => {
+    const studios = new Set();
+    movies.forEach((movie) => {
+      movie.schedules?.forEach((schedule) => {
+        if (schedule.studio) studios.add(schedule.studio);
+      });
+    });
+    return Array.from(studios).sort();
+  }, [movies]);
 
   useEffect(() => {
     // Fetch all movies for the main list
@@ -413,7 +445,52 @@ export default function Home() {
       );
     }
 
-    // 3. Sort
+    // 3. Price filter
+    if (priceFilter !== "all") {
+      result = result.filter((movie) => {
+        const prices = movie.schedules?.map((s) => s.price) || [];
+        if (prices.length === 0) return false;
+        const minPrice = Math.min(...prices);
+        switch (priceFilter) {
+          case "low":
+            return minPrice < 40000;
+          case "medium":
+            return minPrice >= 40000 && minPrice <= 60000;
+          case "high":
+            return minPrice > 60000;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // 4. Studio filter
+    if (studioFilter !== "all") {
+      result = result.filter((movie) =>
+        movie.schedules?.some((s) => s.studio === studioFilter),
+      );
+    }
+
+    // 5. Time of day filter
+    if (timeFilter !== "all") {
+      result = result.filter((movie) => {
+        return movie.schedules?.some((schedule) => {
+          const hour = new Date(schedule.showTime).getHours();
+          switch (timeFilter) {
+            case "morning":
+              return hour >= 6 && hour < 12;
+            case "afternoon":
+              return hour >= 12 && hour < 18;
+            case "evening":
+              return hour >= 18 || hour < 6;
+            default:
+              return true;
+          }
+        });
+      });
+    }
+
+    // 6. Sort
     switch (sortBy) {
       case "title-asc":
         result.sort((a, b) => a.title.localeCompare(b.title));
@@ -430,15 +507,77 @@ export default function Home() {
       case "newest":
         result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         break;
+      case "price-asc":
+        result.sort((a, b) => {
+          const aPrice = Math.min(
+            ...(a.schedules?.map((s) => s.price) || [Infinity]),
+          );
+          const bPrice = Math.min(
+            ...(b.schedules?.map((s) => s.price) || [Infinity]),
+          );
+          return aPrice - bPrice;
+        });
+        break;
+      case "price-desc":
+        result.sort((a, b) => {
+          const aPrice = Math.min(
+            ...(a.schedules?.map((s) => s.price) || [Infinity]),
+          );
+          const bPrice = Math.min(
+            ...(b.schedules?.map((s) => s.price) || [Infinity]),
+          );
+          return bPrice - aPrice;
+        });
+        break;
+      case "popularity":
+        result.sort((a, b) => {
+          const aCount =
+            a.schedules?.reduce(
+              (acc, s) => acc + (s.bookings?.length || 0),
+              0,
+            ) || 0;
+          const bCount =
+            b.schedules?.reduce(
+              (acc, s) => acc + (s.bookings?.length || 0),
+              0,
+            ) || 0;
+          return bCount - aCount;
+        });
+        break;
+      case "rating":
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
       default:
         break;
     }
 
     return result;
-  }, [movies, searchQuery, sortBy, durationFilter]);
+  }, [
+    movies,
+    searchQuery,
+    sortBy,
+    durationFilter,
+    priceFilter,
+    studioFilter,
+    timeFilter,
+  ]);
 
   const hasActiveFilters =
-    searchQuery.trim() || sortBy !== "default" || durationFilter !== "all";
+    searchQuery.trim() ||
+    sortBy !== "default" ||
+    durationFilter !== "all" ||
+    priceFilter !== "all" ||
+    studioFilter !== "all" ||
+    timeFilter !== "all";
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setSortBy("default");
+    setDurationFilter("all");
+    setPriceFilter("all");
+    setStudioFilter("all");
+    setTimeFilter("all");
+  };
 
   if (loading) {
     return (
@@ -658,11 +797,7 @@ export default function Home() {
             {/* Clear Filters */}
             {hasActiveFilters && (
               <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setSortBy("default");
-                  setDurationFilter("all");
-                }}
+                onClick={clearAllFilters}
                 className="btn btn-ghost btn-sm gap-1.5 text-sm opacity-60 hover:opacity-100"
               >
                 <svg
@@ -682,10 +817,11 @@ export default function Home() {
         {/* Expandable Filter Panel */}
         {showFilters && (
           <div className="card bg-base-200 shadow-sm mb-6">
-            <div className="card-body p-4">
-              <div className="flex flex-col sm:flex-row gap-4">
+            <div className="card-body p-4 space-y-4">
+              {/* First Row: Sort & Duration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Sort Dropdown */}
-                <div className="flex-1">
+                <div>
                   <label className="label label-text text-sm opacity-60 mb-1">
                     Sort by
                   </label>
@@ -703,7 +839,7 @@ export default function Home() {
                 </div>
 
                 {/* Duration Filter Dropdown */}
-                <div className="flex-1">
+                <div>
                   <label className="label label-text text-sm opacity-60 mb-1">
                     Duration
                   </label>
@@ -719,7 +855,64 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
+
+                {/* Price Filter Dropdown */}
+                <div>
+                  <label className="label label-text text-sm opacity-60 mb-1">
+                    Price
+                  </label>
+                  <select
+                    value={priceFilter}
+                    onChange={(e) => setPriceFilter(e.target.value)}
+                    className="select select-bordered select-sm w-full focus:select-primary"
+                  >
+                    {PRICE_FILTERS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Time of Day Filter Dropdown */}
+                <div>
+                  <label className="label label-text text-sm opacity-60 mb-1">
+                    Time of Day
+                  </label>
+                  <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value)}
+                    className="select select-bordered select-sm w-full focus:select-primary"
+                  >
+                    {TIME_FILTERS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
+              {/* Second Row: Studio Filter */}
+              {availableStudios.length > 0 && (
+                <div>
+                  <label className="label label-text text-sm opacity-60 mb-1">
+                    Studio
+                  </label>
+                  <select
+                    value={studioFilter}
+                    onChange={(e) => setStudioFilter(e.target.value)}
+                    className="select select-bordered select-sm w-full sm:w-auto focus:select-primary"
+                  >
+                    <option value="all">All Studios</option>
+                    {availableStudios.map((studio) => (
+                      <option key={studio} value={studio}>
+                        {studio}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -738,11 +931,7 @@ export default function Home() {
                   Try adjusting your search or filters.
                 </p>
                 <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSortBy("default");
-                    setDurationFilter("all");
-                  }}
+                  onClick={clearAllFilters}
                   className="btn btn-outline btn-sm"
                 >
                   Clear all filters

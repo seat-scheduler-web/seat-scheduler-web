@@ -28,6 +28,7 @@ model Movie {
   duration    Int
   genre       String?
   posterUrl   String?
+  rating      Float?
 
   schedules Schedule[]
 
