@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "../../api/client";
+import { useToast } from "../../components/Toast";
 import AdminLayout from "./AdminLayout";
 
 function MovieForm({ movie, onSubmit, onCancel }) {
@@ -112,9 +113,9 @@ function MovieForm({ movie, onSubmit, onCancel }) {
 }
 
 export default function Movies() {
+  const { addToast } = useToast();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingMovie, setEditingMovie] = useState(null);
 
@@ -127,7 +128,7 @@ export default function Movies() {
       const data = await apiRequest("/movies");
       setMovies(data);
     } catch (err) {
-      setError(err.message);
+      addToast(`Failed to load movies: ${err.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -140,17 +141,19 @@ export default function Movies() {
           method: "PATCH",
           body: JSON.stringify(formData),
         });
+        addToast(`Movie "${formData.title}" updated successfully`, "success");
       } else {
         await apiRequest("/movies", {
           method: "POST",
           body: JSON.stringify(formData),
         });
+        addToast(`Movie "${formData.title}" added successfully`, "success");
       }
       setShowForm(false);
       setEditingMovie(null);
       loadMovies();
     } catch (err) {
-      setError(err.message);
+      addToast(err.message, "error");
     }
   }
 
@@ -158,10 +161,12 @@ export default function Movies() {
     if (!confirm("Are you sure you want to delete this movie?")) return;
 
     try {
+      const movie = movies.find((m) => m.id === id);
       await apiRequest(`/movies/${id}`, { method: "DELETE" });
+      addToast(`Movie "${movie?.title}" deleted successfully`, "success");
       loadMovies();
     } catch (err) {
-      setError(err.message);
+      addToast(err.message, "error");
     }
   }
 
@@ -194,12 +199,6 @@ export default function Movies() {
             + Add Movie
           </button>
         </div>
-
-        {error && (
-          <div className="alert alert-error">
-            <span>{error}</span>
-          </div>
-        )}
 
         {showForm && (
           <MovieForm

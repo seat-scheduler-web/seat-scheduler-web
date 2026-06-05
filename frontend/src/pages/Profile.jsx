@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../api/client";
+import { useToast } from "../components/Toast";
 
 function validateEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,6 +15,7 @@ function validateUsername(username) {
 
 export default function Profile() {
   const { user, setUser } = useAuth();
+  const { addToast } = useToast();
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -24,8 +26,6 @@ export default function Profile() {
     username: "",
     email: "",
   });
-  const [profileSuccess, setProfileSuccess] = useState("");
-  const [profileError, setProfileError] = useState("");
   const [profileSubmitting, setProfileSubmitting] = useState(false);
 
   // Password form state
@@ -39,8 +39,6 @@ export default function Profile() {
     newPassword: "",
     confirmPassword: "",
   });
-  const [passwordSuccess, setPasswordSuccess] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
 
   // Booking stats state
@@ -136,8 +134,6 @@ export default function Profile() {
 
   async function handleProfileSubmit(e) {
     e.preventDefault();
-    setProfileSuccess("");
-    setProfileError("");
 
     if (!validateProfile()) return;
 
@@ -149,9 +145,9 @@ export default function Profile() {
         body: JSON.stringify(profileForm),
       });
       setUser(data.user);
-      setProfileSuccess("Profile updated successfully");
+      addToast("Profile updated successfully", "success");
     } catch (err) {
-      setProfileError(err.message);
+      addToast(err.message, "error");
     } finally {
       setProfileSubmitting(false);
     }
@@ -159,8 +155,6 @@ export default function Profile() {
 
   async function handlePasswordSubmit(e) {
     e.preventDefault();
-    setPasswordSuccess("");
-    setPasswordError("");
 
     if (!validatePassword()) return;
 
@@ -174,14 +168,14 @@ export default function Profile() {
           newPassword: passwordForm.newPassword,
         }),
       });
-      setPasswordSuccess("Password changed successfully");
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
+      addToast("Password changed successfully", "success");
     } catch (err) {
-      setPasswordError(err.message);
+      addToast(err.message, "error");
     } finally {
       setPasswordSubmitting(false);
     }
@@ -258,17 +252,6 @@ export default function Profile() {
           <div className="bg-base-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Update Profile</h3>
 
-            {profileSuccess && (
-              <div className="alert alert-success text-sm mb-4">
-                {profileSuccess}
-              </div>
-            )}
-            {profileError && (
-              <div className="alert alert-error text-sm mb-4">
-                {profileError}
-              </div>
-            )}
-
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div className="form-control">
                 <label className="label">
@@ -340,17 +323,6 @@ export default function Profile() {
           {/* Password Form */}
           <div className="bg-base-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Change Password</h3>
-
-            {passwordSuccess && (
-              <div className="alert alert-success text-sm mb-4">
-                {passwordSuccess}
-              </div>
-            )}
-            {passwordError && (
-              <div className="alert alert-error text-sm mb-4">
-                {passwordError}
-              </div>
-            )}
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div className="form-control">

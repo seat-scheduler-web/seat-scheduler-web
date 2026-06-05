@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
+import { useToast } from "../components/Toast";
 
 function validateEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -15,13 +16,13 @@ function validateUsername(username) {
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [errors, setErrors] = useState({
     username: "",
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   function validate() {
@@ -64,7 +65,6 @@ export default function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
 
     if (!validate()) {
       return;
@@ -74,9 +74,10 @@ export default function Register() {
 
     try {
       await register(form.username, form.email, form.password);
+      addToast("Account created successfully! Welcome aboard.", "success");
       navigate("/");
     } catch (err) {
-      setError(err.message);
+      addToast(err.message, "error");
     } finally {
       setSubmitting(false);
     }
@@ -92,7 +93,7 @@ export default function Register() {
       <div className="absolute bottom-16 left-16 text-5xl opacity-10 select-none rotate-12">
         🎪
       </div>
-      <div className="absolute top-1/4 left-1/3 text-4xl opacity-5 select-none">
+      <div className="absolute top/4 left-1/3 text-4xl opacity-5 select-none">
         🎦
       </div>
 
@@ -114,12 +115,6 @@ export default function Register() {
                 Join us and start booking movies
               </p>
             </div>
-
-            {error && (
-              <div className="alert alert-error text-sm shadow-lg mb-4">
-                {error}
-              </div>
-            )}
 
             <div className="form-control">
               <label className="label">

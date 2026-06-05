@@ -314,12 +314,12 @@ Users get no feedback when performing actions (booking, canceling, updating prof
 
 ## checklist
 
-- [ ] Add toast notification for successful booking
-- [ ] Add toast notification for booking cancellation
-- [ ] Add toast notification for profile update
-- [ ] Add toast notification for password change
-- [ ] Add error toasts for failed actions
-- [ ] Ensure toasts auto-dismiss after reasonable time
+- [x] Add toast notification for successful booking
+- [x] Add toast notification for booking cancellation
+- [x] Add toast notification for profile update
+- [x] Add toast notification for password change
+- [x] Add error toasts for failed actions
+- [x] Ensure toasts auto-dismiss after reasonable time
 
 ## labels
 

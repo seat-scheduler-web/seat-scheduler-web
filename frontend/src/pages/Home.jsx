@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { MovieCardSkeleton } from "../components/Skeleton";
 import { useAuth } from "../context/AuthContext";
 import { useBuyerQueue } from "../context/BuyerQueueContext";
+import { useToast } from "../components/Toast";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -105,26 +106,40 @@ function MoviePoster({ movie, index }) {
   const gradient = movieGradients[index % movieGradients.length];
   const icons = ["🎬", "🎥", "🎞️", "🍿", "🎭", "🎪", "🎦", "📽️"];
   const icon = icons[index % icons.length];
+  const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  const hasPoster = movie.posterUrl && !imgError;
 
   return (
     <div
       className={`relative h-44 md:h-52 bg-gradient-to-br ${gradient} flex items-center justify-center overflow-hidden`}
     >
-      {/* Decorative circles */}
-      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10" />
-      <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/10" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-white/5" />
+      {hasPoster ? (
+        <>
+          <img
+            src={movie.posterUrl}
+            alt={movie.title}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+            onError={() => setImgError(true)}
+            onLoad={() => setImgLoaded(true)}
+            loading="lazy"
+          />
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-base-200 via-base-200/60 to-transparent" />
+        </>
+      ) : (
+        <>
+          <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-white/5" />
+          <span className="text-6xl md:text-7xl opacity-80 drop-shadow-lg select-none">
+            {icon}
+          </span>
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-base-200 to-transparent" />
+        </>
+      )}
 
-      {/* Film icon */}
-      <span className="text-6xl md:text-7xl opacity-80 drop-shadow-lg select-none">
-        {icon}
-      </span>
-
-      {/* Gradient overlay at bottom for text readability */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-base-200 to-transparent" />
-
-      {/* Duration badge on poster */}
-      <div className="absolute top-3 right-3">
+      <div className="absolute top-3 right-3 z-10">
         <span className="badge badge-soft badge-sm bg-black/30 text-white border-0 backdrop-blur-sm">
           {formatDuration(movie.duration)}
         </span>
@@ -142,6 +157,8 @@ function getDurationCategory(minutes) {
 export default function Home() {
   const { user } = useAuth();
   const { joinQueue, getQueue, getPosition } = useBuyerQueue();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -603,9 +620,13 @@ export default function Home() {
                         <div className="mt-4 pt-3 border-t border-base-300">
                           <button
                             onClick={() => {
-                              if (user) {
-                                joinQueue(movie.schedules[0].id, user);
+                              if (!user) {
+                                addToast("Please login to book a seat", "warning");
+                                navigate("/login");
+                                return;
                               }
+                              joinQueue(movie.schedules[0].id, user);
+                              addToast("Choose a showtime below to pick your seat", "info");
                             }}
                             className="btn btn-primary btn-sm w-full gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                           >

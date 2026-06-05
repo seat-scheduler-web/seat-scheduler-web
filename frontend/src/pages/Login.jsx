@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
+import { useToast } from "../components/Toast";
 
 function validateEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -10,9 +11,9 @@ function validateEmail(email) {
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   function validate() {
@@ -41,7 +42,6 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
 
     if (!validate()) {
       return;
@@ -51,9 +51,10 @@ export default function Login() {
 
     try {
       await login(form.email, form.password);
+      addToast("Welcome back! You're now logged in.", "success");
       navigate("/");
     } catch (err) {
-      setError(err.message);
+      addToast(err.message, "error");
     } finally {
       setSubmitting(false);
     }
@@ -91,12 +92,6 @@ export default function Login() {
                 Sign in to book your seats
               </p>
             </div>
-
-            {error && (
-              <div className="alert alert-error text-sm shadow-lg mb-4">
-                {error}
-              </div>
-            )}
 
             <div className="form-control">
               <label className="label">

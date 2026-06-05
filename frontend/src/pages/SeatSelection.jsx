@@ -82,11 +82,13 @@ export default function SeatSelection() {
           seatNumber: selectedSeat,
         }),
       });
+      addToast(`Booking confirmed! Seat ${selectedSeat}`, "success");
       navigate(`/bookings/${result.booking.id}/confirmation`, {
         state: { booking: result.booking },
       });
     } catch (err) {
       setSubmitError(err.message);
+      addToast(err.message, "error");
     } finally {
       setSubmitting(false);
     }
