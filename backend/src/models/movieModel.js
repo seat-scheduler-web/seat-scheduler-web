@@ -17,6 +17,7 @@ async function createMovie({
   duration,
   genre,
   posterUrl,
+  rating,
   schedules = [],
 }) {
   return prisma.movie.create({
@@ -26,6 +27,7 @@ async function createMovie({
       duration: Number(duration),
       genre,
       posterUrl,
+      rating: rating ? Number(rating) : null,
       schedules: {
         create: schedules.map((schedule) => ({
           showTime: new Date(schedule.showTime),
@@ -77,7 +79,7 @@ async function getMovieById(id) {
 
 async function updateMovie(
   id,
-  { title, description, duration, genre, posterUrl },
+  { title, description, duration, genre, posterUrl, rating },
 ) {
   const movie = await getMovieById(id);
 
@@ -91,6 +93,7 @@ async function updateMovie(
       duration: duration === undefined ? undefined : Number(duration),
       genre,
       posterUrl,
+      rating: rating === undefined ? undefined : rating ? Number(rating) : null,
     },
     include: includeSchedules,
   });
