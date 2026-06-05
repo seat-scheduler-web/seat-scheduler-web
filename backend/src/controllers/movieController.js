@@ -3,13 +3,76 @@ import {
   deleteMovie,
   getMovieById,
   getMovies,
+  getMoviesWithBookingCounts,
   updateMovie,
 } from "../models/movieModel.js";
 import { sendError } from "../lib/apiResponse.js";
 import { hasRequiredFields, isPositiveId } from "../lib/validation.js";
 
-async function listMovies(_req, res, next) {
+async function listMovies(req, res, next) {
   try {
+    const { view } = req.query;
+
+    if (view === "sections") {
+      const movies = await getMoviesWithBookingCounts();
+      const now = new Date();
+
+      // Now Popular: movies with most bookings
+      const popular = [...movies]
+        .filter((m) => m.bookingCount > 0)
+        .sort((a, b) => b.bookingCount - a.bookingCount)
+        .slice(0, 6);
+
+      // Newest: movies by creation date
+      const newest = [...movies]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 6);
+
+      // Coming Soon: movies with future schedules
+      const comingSoon = [...movies]
+        .filter((m) => m.futureSchedules > 0)
+        .sort((a, b) => {
+          const aNextShow = Math.min(
+            ...a.schedules
+              .filter((s) => new Date(s.showTime) > now)
+              .map((s) => new Date(s.showTime).getTime()),
+          );
+          const bNextShow = Math.min(
+            ...b.schedules
+              .filter((s) => new Date(s.showTime) > now)
+              .map((s) => new Date(s.showTime).getTime()),
+          );
+          return aNextShow - bNextShow;
+        })
+        .slice(0, 6);
+
+      // Trending: movies with most bookings in the last 7 days
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const trending = [...movies]
+        .map((m) => ({
+          ...m,
+          recentBookings: m.schedules.reduce(
+            (count, schedule) =>
+              count +
+              schedule.bookings.filter(
+                (b) => new Date(b.createdAt) >= oneWeekAgo,
+              ).length,
+            0,
+          ),
+        }))
+        .filter((m) => m.recentBookings > 0)
+        .sort((a, b) => b.recentBookings - a.recentBookings)
+        .slice(0, 6);
+
+      res.json({
+        popular,
+        newest,
+        comingSoon,
+        trending,
+      });
+      return;
+    }
+
     const movies = await getMovies();
     res.json(movies);
   } catch (error) {

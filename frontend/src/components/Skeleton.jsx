@@ -131,6 +131,37 @@ export function MyBookingsSkeleton() {
   );
 }
 
+export function SectionSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 bg-base-300 rounded" />
+        <div className="h-7 bg-base-300 rounded w-48" />
+        <div className="h-5 bg-base-300 rounded w-8" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="card bg-base-200 shadow-md overflow-hidden">
+            <div className="h-44 bg-base-300" />
+            <div className="card-body p-4 space-y-3">
+              <div className="h-5 bg-base-300 rounded w-3/4" />
+              <div className="h-4 bg-base-300 rounded w-full" />
+              <div className="h-4 bg-base-300 rounded w-2/3" />
+              <div className="pt-3 border-t border-base-300">
+                <div className="flex gap-2">
+                  <div className="h-6 bg-base-300 rounded w-20" />
+                  <div className="h-6 bg-base-300 rounded w-20" />
+                </div>
+                <div className="h-8 bg-base-300 rounded w-full mt-2" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TableSkeleton({ rows = 5, columns = 4 }) {
   return (
     <div className="bg-base-100 rounded-lg shadow-sm overflow-hidden animate-pulse">

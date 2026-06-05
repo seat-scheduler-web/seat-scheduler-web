@@ -345,7 +345,7 @@ ux, frontend, performance
 
 ---
 
-### [ux] add-empty-states
+#113 [ux] add-empty-states
 
 **description**
 Lists show blank space when empty. Add helpful empty states with calls to action.
@@ -365,7 +365,7 @@ ux, frontend
 
 ## Day 6 (June 8): 🎨 Content & Discovery
 
-### [feature] add-content-sections
+#114 [feature] add-content-sections
 
 **description**
 Add curated content sections like "Now Popular", "Newest", "Coming Soon" to make the site feel alive.
@@ -384,7 +384,7 @@ feature, frontend, content
 
 ---
 
-### [feature] expand-filters-and-sorts
+#115 [feature] expand-filters-and-sorts
 
 **description**
 Add more filter and sort options like price range, studio, seat availability, rating, etc.
@@ -406,7 +406,7 @@ feature, frontend, ux
 
 ---
 
-### [bug] fix-search-filter-ui
+#116 [bug] fix-search-filter-ui
 
 **description**
 The search and filter UI has layout issues. Controls are not properly aligned and the mobile experience is poor.
@@ -424,7 +424,7 @@ bug, frontend, ui
 
 ---
 
-### [feature] add-seat-pricing
+#117 [feature] add-seat-pricing
 
 **description**
 Add pricing to seat booking to make it feel realistic. Different seat types (regular, premium) should have different prices.
