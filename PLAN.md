@@ -334,10 +334,10 @@ Pages show blank content while loading. Add skeleton loaders to improve perceive
 
 ## checklist
 
-- [ ] Add skeleton loader for movie list
-- [ ] Add skeleton loader for booking list
-- [ ] Add skeleton loader for admin tables
-- [ ] Ensure skeletons match final content layout
+- [x] Add skeleton loader for movie list
+- [x] Add skeleton loader for booking list
+- [x] Add skeleton loader for admin tables
+- [x] Ensure skeletons match final content layout
 
 ## labels
 

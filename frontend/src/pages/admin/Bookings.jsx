@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "../../api/client";
 import AdminLayout from "./AdminLayout";
+import { TableSkeleton } from "../../components/Skeleton";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Statuses" },
@@ -52,8 +53,12 @@ export default function Bookings() {
   if (loading && bookings.length === 0) {
     return (
       <AdminLayout>
-        <div className="flex justify-center py-12">
-          <span className="loading loading-spinner loading-lg" />
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="h-8 w-32 bg-base-300 rounded animate-pulse" />
+            <div className="h-10 w-28 bg-base-300 rounded animate-pulse" />
+          </div>
+          <TableSkeleton rows={5} columns={6} />
         </div>
       </AdminLayout>
     );
