@@ -142,8 +142,9 @@ export default function Bookings() {
           </div>
 
           {bookings.length === 0 && (
-            <div className="text-center py-12 text-base-content/50">
-              No bookings found.
+            <div className="text-center py-12 space-y-3">
+              <div className="text-5xl">🎟️</div>
+              <p className="text-base-content/50">No bookings yet. Bookings will appear here once users start reserving seats.</p>
             </div>
           )}
         </div>

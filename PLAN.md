@@ -352,10 +352,10 @@ Lists show blank space when empty. Add helpful empty states with calls to action
 
 ## checklist
 
-- [ ] Add empty state for movie list (no movies)
-- [ ] Add empty state for booking list (no bookings)
-- [ ] Add empty state for search results (no matches)
-- [ ] Include helpful messages and action buttons
+- [x] Add empty state for movie list (no movies)
+- [x] Add empty state for booking list (no bookings)
+- [x] Add empty state for search results (no matches)
+- [x] Include helpful messages and action buttons
 
 ## labels
 
