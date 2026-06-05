@@ -130,3 +130,34 @@ export function MyBookingsSkeleton() {
     </div>
   );
 }
+
+export function TableSkeleton({ rows = 5, columns = 4 }) {
+  return (
+    <div className="bg-base-100 rounded-lg shadow-sm overflow-hidden animate-pulse">
+      <div className="overflow-x-auto">
+        <table className="table table-zebra">
+          <thead>
+            <tr>
+              {Array.from({ length: columns }, (_, i) => (
+                <th key={i}>
+                  <div className="h-4 bg-base-300 rounded w-16" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }, (_, row) => (
+              <tr key={row}>
+                {Array.from({ length: columns }, (_, col) => (
+                  <td key={col}>
+                    <div className="h-4 bg-base-300 rounded w-20" />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

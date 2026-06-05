@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "../../api/client";
 import { useToast } from "../../components/Toast";
+import { TableSkeleton } from "../../components/Skeleton";
 import AdminLayout from "./AdminLayout";
 
 function MovieForm({ movie, onSubmit, onCancel }) {
@@ -183,8 +184,12 @@ export default function Movies() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex justify-center py-12">
-          <span className="loading loading-spinner loading-lg" />
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="h-8 w-32 bg-base-300 rounded animate-pulse" />
+            <div className="h-10 w-28 bg-base-300 rounded animate-pulse" />
+          </div>
+          <TableSkeleton rows={5} columns={4} />
         </div>
       </AdminLayout>
     );
