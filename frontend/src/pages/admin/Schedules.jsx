@@ -240,8 +240,9 @@ export default function Schedules() {
           </div>
 
           {schedules.length === 0 && (
-            <div className="text-center py-12 text-base-content/50">
-              No schedules found. Add your first schedule!
+            <div className="text-center py-12 space-y-3">
+              <div className="text-5xl">📅</div>
+              <p className="text-base-content/50">No schedules yet. Add your first schedule to get started!</p>
             </div>
           )}
         </div>

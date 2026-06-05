@@ -257,8 +257,9 @@ export default function Movies() {
           </div>
 
           {movies.length === 0 && (
-            <div className="text-center py-12 text-base-content/50">
-              No movies found. Add your first movie!
+            <div className="text-center py-12 space-y-3">
+              <div className="text-5xl">🎬</div>
+              <p className="text-base-content/50">No movies yet. Add your first movie to get started!</p>
             </div>
           )}
         </div>
