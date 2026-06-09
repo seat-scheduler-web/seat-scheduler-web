@@ -12,6 +12,9 @@ import {
   getScheduleById,
   getSchedules,
 } from "../models/scheduleModel.js";
+import { get, set, invalidatePrefix } from "../lib/cache.js";
+
+const CACHE_TTL = 60; // seconds
 
 const seatRows = ["A", "B", "C", "D", "E"];
 const seatsPerRow = 8;
@@ -30,7 +33,21 @@ async function listSchedules(req, res, next) {
       return sendError(res, 400, "Movie must be a valid id");
     }
 
+    // Build cache key based on query params
+    const cacheKey = movieId
+      ? `schedules:list:movie:${movieId}`
+      : "schedules:list";
+
+    const cached = get(cacheKey);
+    if (cached) {
+      res.set("X-Cache", "HIT");
+      res.json(cached);
+      return;
+    }
+
     const schedules = await getSchedules(movieId);
+    set(cacheKey, schedules, CACHE_TTL);
+    res.set("X-Cache", "MISS");
     res.json(schedules);
   } catch (error) {
     next(error);
@@ -43,10 +60,20 @@ async function getSchedule(req, res, next) {
       return sendError(res, 400, "Schedule must be a valid id");
     }
 
+    const cacheKey = `schedules:${req.params.id}`;
+    const cached = get(cacheKey);
+    if (cached) {
+      res.set("X-Cache", "HIT");
+      res.json(cached);
+      return;
+    }
+
     const schedule = await getScheduleById(req.params.id);
 
     if (!schedule) return sendError(res, 404, "Schedule not found");
 
+    set(cacheKey, schedule, CACHE_TTL);
+    res.set("X-Cache", "MISS");
     res.json(schedule);
   } catch (error) {
     next(error);
@@ -59,6 +86,15 @@ async function getSeatAvailability(req, res, next) {
       return sendError(res, 400, "Schedule must be a valid id");
     }
 
+    // Seat availability is real-time data, use shorter cache
+    const cacheKey = `schedules:${req.params.id}:seats`;
+    const cached = get(cacheKey);
+    if (cached) {
+      res.set("X-Cache", "HIT");
+      res.json(cached);
+      return;
+    }
+
     const schedule = await getScheduleById(req.params.id);
     if (!schedule) return sendError(res, 404, "Schedule not found");
 
@@ -67,12 +103,17 @@ async function getSeatAvailability(req, res, next) {
     const bookedSeatSet = new Set(bookedSeats);
     const seats = getSeatNumbers();
 
-    res.json({
+    const result = {
       schedule,
       seats,
       availableSeats: seats.filter((seat) => !bookedSeatSet.has(seat)),
       bookedSeats,
-    });
+    };
+
+    // Cache seat availability for shorter time (15 seconds)
+    set(cacheKey, result, 15);
+    res.set("X-Cache", "MISS");
+    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -106,6 +147,10 @@ async function addSchedule(req, res, next) {
       showTime,
       studio: studio.trim(),
     });
+
+    // Invalidate schedule list caches and movie sections
+    invalidatePrefix("schedules:");
+    invalidatePrefix("movies:sections");
 
     res.status(201).json(schedule);
   } catch (error) {

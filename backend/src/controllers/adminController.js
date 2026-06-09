@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { sendError } from "../lib/apiResponse.js";
 import { isPositiveId } from "../lib/validation.js";
+import { invalidatePrefix } from "../lib/cache.js";
 
 async function listAllBookings(req, res, next) {
   try {
@@ -65,6 +66,10 @@ async function deleteSchedule(req, res, next) {
     await prisma.schedule.delete({
       where: { id: Number(req.params.id) },
     });
+
+    // Invalidate schedule and movie section caches
+    invalidatePrefix("schedules:");
+    invalidatePrefix("movies:sections");
 
     res.json({ message: "Schedule deleted successfully" });
   } catch (error) {

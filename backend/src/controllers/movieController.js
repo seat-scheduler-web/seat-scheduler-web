@@ -9,12 +9,25 @@ import {
 import { sendError } from "../lib/apiResponse.js";
 import { hasRequiredFields, isPositiveId } from "../lib/validation.js";
 import { searchMovie, getPosterUrl } from "../lib/tmdb.js";
+import { get, set, invalidatePrefix } from "../lib/cache.js";
+
+const CACHE_TTL = 60; // seconds
+const CACHE_KEY_MOVIES = "movies:list";
+const CACHE_KEY_SECTIONS = "movies:sections";
 
 async function listMovies(req, res, next) {
   try {
     const { view } = req.query;
 
     if (view === "sections") {
+      // Check cache first
+      const cached = get(CACHE_KEY_SECTIONS);
+      if (cached) {
+        res.set("X-Cache", "HIT");
+        res.json(cached);
+        return;
+      }
+
       const movies = await getMoviesWithBookingCounts();
       const now = new Date();
 
@@ -65,16 +78,31 @@ async function listMovies(req, res, next) {
         .sort((a, b) => b.recentBookings - a.recentBookings)
         .slice(0, 6);
 
-      res.json({
+      const result = {
         popular,
         newest,
         comingSoon,
         trending,
-      });
+      };
+
+      // Cache the result
+      set(CACHE_KEY_SECTIONS, result, CACHE_TTL);
+      res.set("X-Cache", "MISS");
+      res.json(result);
+      return;
+    }
+
+    // Check cache for regular movie list
+    const cached = get(CACHE_KEY_MOVIES);
+    if (cached) {
+      res.set("X-Cache", "HIT");
+      res.json(cached);
       return;
     }
 
     const movies = await getMovies();
+    set(CACHE_KEY_MOVIES, movies, CACHE_TTL);
+    res.set("X-Cache", "MISS");
     res.json(movies);
   } catch (error) {
     next(error);
@@ -87,10 +115,20 @@ async function getMovie(req, res, next) {
       return sendError(res, 400, "Movie must be a valid id");
     }
 
+    const cacheKey = `movies:${req.params.id}`;
+    const cached = get(cacheKey);
+    if (cached) {
+      res.set("X-Cache", "HIT");
+      res.json(cached);
+      return;
+    }
+
     const movie = await getMovieById(req.params.id);
 
     if (!movie) return sendError(res, 404, "Movie not found");
 
+    set(cacheKey, movie, CACHE_TTL);
+    res.set("X-Cache", "MISS");
     res.json(movie);
   } catch (error) {
     next(error);
@@ -104,6 +142,8 @@ async function addMovie(req, res, next) {
     }
 
     const movie = await createMovie(req.body);
+    // Invalidate movie list caches
+    invalidatePrefix("movies:");
     res.status(201).json(movie);
   } catch (error) {
     next(error);
@@ -120,6 +160,8 @@ async function editMovie(req, res, next) {
 
     if (!movie) return sendError(res, 404, "Movie not found");
 
+    // Invalidate movie list caches and this specific movie
+    invalidatePrefix("movies:");
     res.json(movie);
   } catch (error) {
     next(error);
@@ -136,6 +178,8 @@ async function removeMovie(req, res, next) {
 
     if (!movie) return sendError(res, 404, "Movie not found");
 
+    // Invalidate movie list caches
+    invalidatePrefix("movies:");
     res.json(movie);
   } catch (error) {
     next(error);
