@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/prisma.js";
+import { enrichMovieData } from "../src/lib/tmdb.js";
 
 const password = await bcrypt.hash("password123", 10);
 
@@ -15,6 +16,10 @@ function randomInt(min, max) {
 
 function randomPrice() {
   return pick([30000, 35000, 40000, 45000, 50000, 55000, 60000, 75000, 100000]);
+}
+
+function randomRating() {
+  return Math.round((Math.random() * 4 + 6) * 10) / 10;
 }
 
 function futureDate(daysFromNow, hour, minute = 0) {
@@ -809,6 +814,12 @@ const moviesData = [
 
 async function seedMovies() {
   const movies = [];
+  const useTmdb = process.env.TMDB_API_KEY;
+
+  console.log(
+    `  ${useTmdb ? "🎬 Using TMDB API for movie data" : "📽️ Using local movie data (no TMDB API key)"}`,
+  );
+
   for (const m of moviesData) {
     const existing = await prisma.movie.findFirst({
       where: { title: m.title },
@@ -816,7 +827,27 @@ async function seedMovies() {
     if (existing) {
       movies.push(existing);
     } else {
-      movies.push(await prisma.movie.create({ data: m }));
+      let movieData = { ...m };
+
+      // Try to enrich with TMDB data if API key is available
+      if (useTmdb) {
+        try {
+          const enrichedData = await enrichMovieData(movieData);
+          movieData = enrichedData;
+        } catch (error) {
+          console.error(
+            `  ⚠️ Failed to enrich "${m.title}" with TMDB:`,
+            error.message,
+          );
+        }
+      }
+
+      // Fallback to random rating if not provided and not from TMDB
+      if (!movieData.rating) {
+        movieData.rating = randomRating();
+      }
+
+      movies.push(await prisma.movie.create({ data: movieData }));
     }
   }
   return movies;
