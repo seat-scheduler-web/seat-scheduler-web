@@ -9,6 +9,7 @@ import { bookingRoutes } from "./routes/bookingRoutes.js";
 import { movieRoutes } from "./routes/movieRoutes.js";
 import { scheduleRoutes } from "./routes/scheduleRoutes.js";
 import { userRoutes } from "./routes/userRoutes.js";
+import { stats as cacheStats, clear as clearCache } from "./lib/cache.js";
 
 dotenv.config();
 
@@ -30,6 +31,14 @@ app.use(
 );
 app.use(express.json());
 
+// Cache headers middleware for GET responses
+app.use((req, res, next) => {
+  if (req.method === "GET") {
+    res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=30");
+  }
+  next();
+});
+
 app.get("/", (_req, res) => {
   res.send("Server is running");
 });
@@ -41,6 +50,20 @@ app.get("/health/db", async (_req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+// Cache monitoring endpoint
+app.get("/health/cache", (_req, res) => {
+  res.json({
+    status: "ok",
+    cache: cacheStats(),
+  });
+});
+
+// Clear cache endpoint (for admin use)
+app.post("/api/admin/cache/clear", (_req, res) => {
+  clearCache();
+  res.json({ message: "Cache cleared successfully" });
 });
 
 app.use("/api/admin", adminRoutes);
