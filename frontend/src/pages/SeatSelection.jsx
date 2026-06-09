@@ -23,6 +23,26 @@ function formatDuration(minutes) {
   return `${h}h ${m}m`;
 }
 
+function formatPrice(price) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(price);
+}
+
+// Premium rows (A, B) cost more than regular rows (C, D, E)
+function getSeatPrice(seat, basePrice) {
+  const row = seat.charAt(0);
+  const premiumMultiplier = ["A", "B"].includes(row) ? 1.5 : 1;
+  return Math.round(basePrice * premiumMultiplier);
+}
+
+function getSeatType(seat) {
+  const row = seat.charAt(0);
+  return ["A", "B"].includes(row) ? "Premium" : "Regular";
+}
+
 const seatRows = ["A", "B", "C", "D", "E"];
 
 export default function SeatSelection() {
@@ -323,9 +343,15 @@ export default function SeatSelection() {
                 )}
               </p>
               {selectedSeat && (
-                <p className="text-xs opacity-50 mt-0.5">
-                  {availableSeats?.length || 0} seats still available
-                </p>
+                <>
+                  <p className="text-xs opacity-50 mt-0.5">
+                    {getSeatType(selectedSeat)} • {availableSeats?.length || 0}{" "}
+                    seats available
+                  </p>
+                  <p className="text-lg font-bold text-success mt-1">
+                    {formatPrice(getSeatPrice(selectedSeat, schedule.price))}
+                  </p>
+                </>
               )}
             </div>
 
