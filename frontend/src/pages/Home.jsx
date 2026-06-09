@@ -5,6 +5,7 @@ import { MovieCardSkeleton, SectionSkeleton } from "../components/Skeleton";
 import { useAuth } from "../context/AuthContext";
 import { useBuyerQueue } from "../context/BuyerQueueContext";
 import { useToast } from "../components/Toast";
+import { useDebounce } from "../hooks/useDebounce";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -459,6 +460,8 @@ export default function Home() {
   const [sectionsLoading, setSectionsLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [sortBy, setSortBy] = useState("default");
   const [durationFilter, setDurationFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
@@ -491,12 +494,21 @@ export default function Home() {
       .finally(() => setSectionsLoading(false));
   }, []);
 
+  // Track debounce loading state
+  useEffect(() => {
+    if (searchQuery !== debouncedSearchQuery) {
+      setIsSearching(true);
+    } else {
+      setIsSearching(false);
+    }
+  }, [searchQuery, debouncedSearchQuery]);
+
   const processedMovies = useMemo(() => {
     let result = [...movies];
 
-    // 1. Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
+    // 1. Search filter (using debounced value)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase().trim();
       result = result.filter((movie) => {
         const titleMatch = movie.title?.toLowerCase().includes(query);
         const descMatch = movie.description?.toLowerCase().includes(query);
@@ -621,7 +633,7 @@ export default function Home() {
     return result;
   }, [
     movies,
-    searchQuery,
+    debouncedSearchQuery,
     sortBy,
     durationFilter,
     priceFilter,
@@ -630,7 +642,7 @@ export default function Home() {
   ]);
 
   const hasActiveFilters =
-    searchQuery.trim() ||
+    debouncedSearchQuery.trim() ||
     sortBy !== "default" ||
     durationFilter !== "all" ||
     priceFilter !== "all" ||
@@ -750,18 +762,33 @@ export default function Home() {
             <div className="max-w-xl mx-auto">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-6 h-6 opacity-50"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  {isSearching ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-6 h-6 opacity-50 animate-spin"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-6 h-6 opacity-50"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
                 </div>
                 <input
                   type="text"
@@ -770,7 +797,7 @@ export default function Home() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="input input-bordered input-lg w-full pl-12 pr-12 text-lg focus:input-primary shadow-lg"
                 />
-                {searchQuery && (
+                {searchQuery && !isSearching && (
                   <button
                     onClick={() => setSearchQuery("")}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center opacity-50 hover:opacity-80 transition-opacity"
@@ -785,6 +812,11 @@ export default function Home() {
                     </svg>
                   </button>
                 )}
+                {isSearching && (
+                  <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                    <span className="loading loading-spinner loading-sm text-primary" />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -798,8 +830,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Content Sections - Hidden when searching */}
-      {!sectionsLoading && sections && !searchQuery.trim() && (
+      {/* Content Sections - Hidden when searching (using debounced value) */}
+      {!sectionsLoading && sections && !debouncedSearchQuery.trim() && (
         <div className="space-y-6">
           {/* Now Popular */}
           <ContentSection
@@ -807,7 +839,7 @@ export default function Home() {
             icon="🔥"
             movies={sections.popular}
             loading={false}
-            searchQuery={searchQuery}
+            searchQuery={debouncedSearchQuery}
             sectionType="popular"
           />
 
@@ -817,7 +849,7 @@ export default function Home() {
             icon="📈"
             movies={sections.trending}
             loading={false}
-            searchQuery={searchQuery}
+            searchQuery={debouncedSearchQuery}
             sectionType="trending"
           />
 
@@ -827,7 +859,7 @@ export default function Home() {
             icon="🎟️"
             movies={sections.comingSoon}
             loading={false}
-            searchQuery={searchQuery}
+            searchQuery={debouncedSearchQuery}
             sectionType="coming-soon"
           />
 
@@ -837,7 +869,7 @@ export default function Home() {
             icon="✨"
             movies={sections.newest}
             loading={false}
-            searchQuery={searchQuery}
+            searchQuery={debouncedSearchQuery}
             sectionType="newest"
           />
         </div>
@@ -1037,8 +1069,8 @@ export default function Home() {
                 <div className="text-6xl">🔍</div>
                 <h2 className="text-xl font-bold">No movies found</h2>
                 <p className="opacity-60">
-                  {searchQuery.trim()
-                    ? `No results for "${searchQuery}" with the current filters.`
+                  {debouncedSearchQuery.trim()
+                    ? `No results for "${debouncedSearchQuery}" with the current filters.`
                     : "No movies match the current filters."}{" "}
                   Try adjusting your search or filters.
                 </p>
