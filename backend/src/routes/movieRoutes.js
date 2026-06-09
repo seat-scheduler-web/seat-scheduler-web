@@ -5,6 +5,7 @@ import {
   getMovie,
   listMovies,
   removeMovie,
+  searchTmdb,
 } from "../controllers/movieController.js";
 import {
   adminMiddleware,
@@ -14,6 +15,7 @@ import {
 const router = Router();
 
 router.get("/", listMovies);
+router.get("/search/tmdb", searchTmdb);
 router.get("/:id", getMovie);
 router.post("/", authMiddleware, adminMiddleware, addMovie);
 router.patch("/:id", authMiddleware, adminMiddleware, editMovie);

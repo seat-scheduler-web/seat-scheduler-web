@@ -23,6 +23,14 @@ function formatDuration(minutes) {
   return `${h}h ${m}m`;
 }
 
+function formatPrice(price) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(price);
+}
+
 const movieGradients = [
   "from-indigo-500 via-purple-500 to-pink-500",
   "from-emerald-500 via-teal-500 to-cyan-500",
@@ -273,6 +281,13 @@ function ContentSection({
       >
         {movies.map((movie, index) => {
           const firstSchedule = movie.schedules?.[0];
+          const minPrice =
+            movie.schedules?.length > 0
+              ? Math.min(...movie.schedules.map((s) => s.price))
+              : null;
+          const uniqueStudios = [
+            ...new Set(movie.schedules?.map((s) => s.studio) || []),
+          ];
 
           return (
             <div
@@ -282,7 +297,7 @@ function ContentSection({
               <MoviePoster movie={movie} index={index} size="large" />
 
               <div className="card-body p-4">
-                {/* Badges */}
+                {/* Badges Row: Section Type + Rating + Price */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {sectionType === "popular" && movie.bookingCount > 0 && (
                     <span className="badge badge-primary badge-xs">
@@ -299,12 +314,45 @@ function ContentSection({
                       {formatDateTime(firstSchedule.showTime)}
                     </span>
                   )}
+                  {movie.rating && (
+                    <span className="badge badge-warning badge-xs font-bold">
+                      ★ {movie.rating.toFixed(1)}
+                    </span>
+                  )}
+                  {minPrice && (
+                    <span className="badge badge-success badge-xs font-bold">
+                      {formatPrice(minPrice)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Title */}
                 <h3 className="card-title text-base font-bold leading-tight mt-2 group-hover:text-primary transition-colors duration-200 line-clamp-1">
                   <HighlightText text={movie.title} query={searchQuery} />
                 </h3>
+
+                {/* Studios */}
+                {uniqueStudios.length > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-3 h-3 opacity-50"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V4.25A2.25 2.25 0 0015.75 2H4.25zM6 5.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h5a1 1 0 000-2H6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-xs opacity-60">
+                      {uniqueStudios.slice(0, 2).join(", ")}
+                      {uniqueStudios.length > 2 &&
+                        ` +${uniqueStudios.length - 2}`}
+                    </span>
+                  </div>
+                )}
 
                 {/* Description */}
                 {movie.description && (
@@ -378,6 +426,25 @@ function ContentSection({
         })}
       </div>
     </section>
+  );
+}
+
+// Active Filter Badge Component
+function ActiveFilterBadge({ label, onClear }) {
+  return (
+    <span className="badge badge-primary badge-sm gap-1">
+      {label}
+      <button onClick={onClear} className="hover:opacity-70">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className="w-3 h-3"
+        >
+          <path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" />
+        </svg>
+      </button>
+    </span>
   );
 }
 
@@ -579,6 +646,33 @@ export default function Home() {
     setTimeFilter("all");
   };
 
+  // Get active filter labels for display
+  const activeFilterLabels = useMemo(() => {
+    const labels = [];
+    if (durationFilter !== "all") {
+      labels.push({
+        key: "duration",
+        label: DURATION_FILTERS.find((f) => f.value === durationFilter)?.label,
+      });
+    }
+    if (priceFilter !== "all") {
+      labels.push({
+        key: "price",
+        label: PRICE_FILTERS.find((f) => f.value === priceFilter)?.label,
+      });
+    }
+    if (studioFilter !== "all") {
+      labels.push({ key: "studio", label: studioFilter });
+    }
+    if (timeFilter !== "all") {
+      labels.push({
+        key: "time",
+        label: TIME_FILTERS.find((f) => f.value === timeFilter)?.label,
+      });
+    }
+    return labels;
+  }, [durationFilter, priceFilter, studioFilter, timeFilter]);
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -704,8 +798,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Content Sections - Horizontal Scrolling */}
-      {!sectionsLoading && sections && (
+      {/* Content Sections - Hidden when searching */}
+      {!sectionsLoading && sections && !searchQuery.trim() && (
         <div className="space-y-6">
           {/* Now Popular */}
           <ContentSection
@@ -758,7 +852,7 @@ export default function Home() {
 
       {/* All Movies Section with Filters */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 pb-8">
-        {/* Filter Toggle & Controls */}
+        {/* Section Header with Filter Toggle */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <h2 className="text-xl md:text-2xl font-bold tracking-tight">
@@ -771,7 +865,6 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Filter Toggle Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`btn btn-sm gap-2 ${showFilters ? "btn-primary" : "btn-ghost"}`}
@@ -789,12 +882,13 @@ export default function Home() {
                 />
               </svg>
               Filters
-              {hasActiveFilters && (
-                <span className="badge badge-sm badge-primary">!</span>
+              {activeFilterLabels.length > 0 && (
+                <span className="badge badge-sm badge-primary">
+                  {activeFilterLabels.length}
+                </span>
               )}
             </button>
 
-            {/* Clear Filters */}
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
@@ -813,6 +907,24 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {/* Active Filter Badges */}
+        {activeFilterLabels.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {activeFilterLabels.map((filter) => (
+              <ActiveFilterBadge
+                key={filter.key}
+                label={filter.label}
+                onClear={() => {
+                  if (filter.key === "duration") setDurationFilter("all");
+                  if (filter.key === "price") setPriceFilter("all");
+                  if (filter.key === "studio") setStudioFilter("all");
+                  if (filter.key === "time") setTimeFilter("all");
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Expandable Filter Panel */}
         {showFilters && (
@@ -946,6 +1058,13 @@ export default function Home() {
               const firstSchedule = movie.schedules?.[0];
               const genre = movie.genre;
               const genreColor = getGenreColor(genre);
+              const minPrice =
+                movie.schedules?.length > 0
+                  ? Math.min(...movie.schedules.map((s) => s.price))
+                  : null;
+              const uniqueStudios = [
+                ...new Set(movie.schedules?.map((s) => s.studio) || []),
+              ];
 
               return (
                 <div
@@ -973,6 +1092,43 @@ export default function Home() {
                         </h2>
                       </div>
                     </div>
+
+                    {/* Rating & Price - Prominent Badges */}
+                    <div className="flex items-center gap-2 mt-3">
+                      {movie.rating && (
+                        <span className="badge badge-warning badge-sm gap-1 font-bold">
+                          ★ {movie.rating.toFixed(1)}
+                        </span>
+                      )}
+                      {minPrice && (
+                        <span className="badge badge-success badge-sm font-bold">
+                          {formatPrice(minPrice)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Studios */}
+                    {uniqueStudios.length > 0 && (
+                      <div className="flex items-center gap-1 mt-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="w-3.5 h-3.5 opacity-50"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V4.25A2.25 2.25 0 0015.75 2H4.25zM6 5.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h5a1 1 0 000-2H6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span className="text-xs opacity-60">
+                          {uniqueStudios.slice(0, 2).join(", ")}
+                          {uniqueStudios.length > 2 &&
+                            ` +${uniqueStudios.length - 2}`}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Description */}
                     {movie.description && (
@@ -1022,40 +1178,6 @@ export default function Home() {
                             {movie.schedules.length > 3 && (
                               <span className="text-xs opacity-50 self-center">
                                 +{movie.schedules.length - 3} more
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Quick Info Row */}
-                          <div className="flex flex-wrap gap-3 mt-3 text-xs opacity-50">
-                            {firstSchedule && (
-                              <span className="flex items-center gap-1">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                  className="w-3.5 h-3.5"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V4.25A2.25 2.25 0 0015.75 2H4.25zM6 5.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h5a1 1 0 000-2H6z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                {firstSchedule.studio}
-                              </span>
-                            )}
-                            {movie.schedules.length > 1 && (
-                              <span className="flex items-center gap-1">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                  className="w-3.5 h-3.5"
-                                >
-                                  <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
-                                </svg>
-                                {movie.schedules.length} options
                               </span>
                             )}
                           </div>

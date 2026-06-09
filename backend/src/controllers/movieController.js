@@ -8,6 +8,7 @@ import {
 } from "../models/movieModel.js";
 import { sendError } from "../lib/apiResponse.js";
 import { hasRequiredFields, isPositiveId } from "../lib/validation.js";
+import { searchMovie, getPosterUrl } from "../lib/tmdb.js";
 
 async function listMovies(req, res, next) {
   try {
@@ -141,4 +142,31 @@ async function removeMovie(req, res, next) {
   }
 }
 
-export { addMovie, editMovie, getMovie, listMovies, removeMovie };
+async function searchTmdb(req, res, next) {
+  try {
+    const { query } = req.query;
+
+    if (!query) {
+      return sendError(res, 400, "Query parameter is required");
+    }
+
+    const movie = await searchMovie(query);
+
+    if (!movie) {
+      return sendError(res, 404, "Movie not found in TMDB");
+    }
+
+    res.json({
+      tmdbId: movie.id,
+      title: movie.title,
+      description: movie.overview,
+      rating: movie.vote_average,
+      posterUrl: getPosterUrl(movie.poster_path),
+      releaseDate: movie.release_date,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export { addMovie, editMovie, getMovie, listMovies, removeMovie, searchTmdb };
