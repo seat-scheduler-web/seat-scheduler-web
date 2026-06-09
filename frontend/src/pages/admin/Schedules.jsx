@@ -3,6 +3,7 @@ import { apiRequest } from "../../api/client";
 import { useToast } from "../../components/Toast";
 import AdminLayout from "./AdminLayout";
 import { TableSkeleton } from "../../components/Skeleton";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 function ScheduleForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState({
@@ -123,6 +124,8 @@ export default function Schedules() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState(null);
 
   useEffect(() => {
     loadSchedules();
@@ -153,19 +156,28 @@ export default function Schedules() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!confirm("Are you sure you want to delete this schedule?")) return;
+  function handleDeleteClick(schedule) {
+    setScheduleToDelete(schedule);
+    setShowDeleteDialog(true);
+  }
+
+  async function handleDeleteConfirm() {
+    if (!scheduleToDelete) return;
 
     try {
-      const schedule = schedules.find((s) => s.id === id);
-      await apiRequest(`/admin/schedules/${id}`, { method: "DELETE" });
+      await apiRequest(`/admin/schedules/${scheduleToDelete.id}`, {
+        method: "DELETE",
+      });
       addToast(
-        `Schedule for "${schedule?.movie?.title}" deleted successfully`,
+        `Schedule for "${scheduleToDelete.movie?.title}" deleted successfully`,
         "success",
       );
       loadSchedules();
     } catch (err) {
       addToast(err.message, "error");
+    } finally {
+      setShowDeleteDialog(false);
+      setScheduleToDelete(null);
     }
   }
 
@@ -228,7 +240,7 @@ export default function Schedules() {
                     <td>
                       <button
                         className="btn btn-sm btn-error btn-outline"
-                        onClick={() => handleDelete(schedule.id)}
+                        onClick={() => handleDeleteClick(schedule)}
                       >
                         Delete
                       </button>
@@ -242,11 +254,32 @@ export default function Schedules() {
           {schedules.length === 0 && (
             <div className="text-center py-12 space-y-3">
               <div className="text-5xl">📅</div>
-              <p className="text-base-content/50">No schedules yet. Add your first schedule to get started!</p>
+              <p className="text-base-content/50">
+                No schedules yet. Add your first schedule to get started!
+              </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setScheduleToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Schedule"
+        message={
+          scheduleToDelete
+            ? `Are you sure you want to delete the schedule for "${scheduleToDelete.movie?.title}" on ${formatDateTime(scheduleToDelete.showTime)}? This action cannot be undone.`
+            : "Are you sure you want to delete this schedule?"
+        }
+        confirmText="Yes, Delete Schedule"
+        cancelText="Cancel"
+        variant="error"
+      />
     </AdminLayout>
   );
 }

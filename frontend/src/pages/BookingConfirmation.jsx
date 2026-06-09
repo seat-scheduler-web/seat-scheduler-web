@@ -32,6 +32,14 @@ function formatShortTime(dateStr) {
   });
 }
 
+function formatPrice(price) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(price);
+}
+
 function PerforatedEdge({ position }) {
   const isTop = position === "top";
   const dots = Array.from({ length: 20 }, (_, i) => i);
@@ -282,6 +290,14 @@ export default function BookingConfirmation() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider opacity-40">
+                Price
+              </p>
+              <p className="text-lg font-bold text-success mt-0.5">
+                {schedule?.price ? formatPrice(schedule.price) : "—"}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-semibold uppercase tracking-wider opacity-40">
                 Status
               </p>
               <span className="badge badge-success badge-sm mt-1 gap-1">
@@ -300,16 +316,6 @@ export default function BookingConfirmation() {
                 {booking.status}
               </span>
             </div>
-            {booking.user && (
-              <div className="text-right">
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-40">
-                  Booked by
-                </p>
-                <p className="text-sm font-medium mt-0.5">
-                  {booking.user.username}
-                </p>
-              </div>
-            )}
           </div>
         </div>
 

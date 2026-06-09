@@ -4,6 +4,7 @@ import { apiRequest } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useUndoStack } from "../context/UndoStackContext";
 import { MyBookingsSkeleton } from "../components/Skeleton";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -25,6 +26,8 @@ export default function MyBookings() {
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
   const [undoing, setUndoing] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
 
   useEffect(() => {
     apiRequest("/bookings")
@@ -33,8 +36,18 @@ export default function MyBookings() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleCancel(bookingId) {
+  function handleCancelClick(booking) {
+    setBookingToCancel(booking);
+    setShowCancelDialog(true);
+  }
+
+  async function handleCancelConfirm() {
+    if (!bookingToCancel) return;
+
+    const bookingId = bookingToCancel.id;
     setCancellingId(bookingId);
+    setShowCancelDialog(false);
+
     try {
       // Find the booking before cancelling (to capture data for undo)
       const booking = bookings.find((b) => b.id === bookingId);
@@ -62,6 +75,7 @@ export default function MyBookings() {
       addToast(err.message, "error");
     } finally {
       setCancellingId(null);
+      setBookingToCancel(null);
     }
   }
 
@@ -332,7 +346,7 @@ export default function MyBookings() {
                       </span>
                       {!isCancelled && (
                         <button
-                          onClick={() => handleCancel(booking.id)}
+                          onClick={() => handleCancelClick(booking)}
                           disabled={cancellingId === booking.id}
                           className="btn btn-outline btn-error btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
                         >
@@ -373,6 +387,26 @@ export default function MyBookings() {
       {error && bookings.length > 0 && (
         <div className="alert alert-error text-sm shadow-lg">{error}</div>
       )}
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showCancelDialog}
+        onClose={() => {
+          setShowCancelDialog(false);
+          setBookingToCancel(null);
+        }}
+        onConfirm={handleCancelConfirm}
+        title="Cancel Booking"
+        message={
+          bookingToCancel
+            ? `Are you sure you want to cancel your booking for "${bookingToCancel.schedule?.movie?.title}" — Seat ${bookingToCancel.seatNumber}? You can undo this action.`
+            : "Are you sure you want to cancel this booking?"
+        }
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        variant="error"
+        loading={cancellingId !== null}
+      />
     </div>
   );
 }

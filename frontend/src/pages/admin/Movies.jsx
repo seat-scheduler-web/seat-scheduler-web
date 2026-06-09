@@ -3,6 +3,7 @@ import { apiRequest } from "../../api/client";
 import { useToast } from "../../components/Toast";
 import { TableSkeleton } from "../../components/Skeleton";
 import AdminLayout from "./AdminLayout";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 function MovieForm({ movie, onSubmit, onCancel }) {
   const [form, setForm] = useState(
@@ -119,6 +120,8 @@ export default function Movies() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingMovie, setEditingMovie] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [movieToDelete, setMovieToDelete] = useState(null);
 
   useEffect(() => {
     loadMovies();
@@ -158,16 +161,26 @@ export default function Movies() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!confirm("Are you sure you want to delete this movie?")) return;
+  function handleDeleteClick(movie) {
+    setMovieToDelete(movie);
+    setShowDeleteDialog(true);
+  }
+
+  async function handleDeleteConfirm() {
+    if (!movieToDelete) return;
 
     try {
-      const movie = movies.find((m) => m.id === id);
-      await apiRequest(`/movies/${id}`, { method: "DELETE" });
-      addToast(`Movie "${movie?.title}" deleted successfully`, "success");
+      await apiRequest(`/movies/${movieToDelete.id}`, { method: "DELETE" });
+      addToast(
+        `Movie "${movieToDelete.title}" deleted successfully`,
+        "success",
+      );
       loadMovies();
     } catch (err) {
       addToast(err.message, "error");
+    } finally {
+      setShowDeleteDialog(false);
+      setMovieToDelete(null);
     }
   }
 
@@ -244,7 +257,7 @@ export default function Movies() {
                         </button>
                         <button
                           className="btn btn-sm btn-error btn-outline"
-                          onClick={() => handleDelete(movie.id)}
+                          onClick={() => handleDeleteClick(movie)}
                         >
                           Delete
                         </button>
@@ -259,11 +272,32 @@ export default function Movies() {
           {movies.length === 0 && (
             <div className="text-center py-12 space-y-3">
               <div className="text-5xl">🎬</div>
-              <p className="text-base-content/50">No movies yet. Add your first movie to get started!</p>
+              <p className="text-base-content/50">
+                No movies yet. Add your first movie to get started!
+              </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setMovieToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Movie"
+        message={
+          movieToDelete
+            ? `Are you sure you want to delete "${movieToDelete.title}"? This action cannot be undone and will also delete all associated schedules and bookings.`
+            : "Are you sure you want to delete this movie?"
+        }
+        confirmText="Yes, Delete Movie"
+        cancelText="Cancel"
+        variant="error"
+      />
     </AdminLayout>
   );
 }
