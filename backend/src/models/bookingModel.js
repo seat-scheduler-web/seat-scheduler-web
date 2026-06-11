@@ -47,12 +47,19 @@ async function getBookingsBySchedule(scheduleId) {
   });
 }
 
-async function getBookingsByUser(userId) {
-  return prisma.booking.findMany({
-    where: { userId: Number(userId) },
-    include: includeConfirmation,
-    orderBy: { createdAt: "desc" },
-  });
+async function getBookingsByUser(userId, page = 1, limit = 10) {
+  const skip = (page - 1) * limit;
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      where: { userId: Number(userId) },
+      skip,
+      take: limit,
+      include: includeConfirmation,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.booking.count({ where: { userId: Number(userId) } }),
+  ]);
+  return { bookings, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 async function getBookingById(id) {

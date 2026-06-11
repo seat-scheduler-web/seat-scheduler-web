@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useUndoStack } from "../context/UndoStackContext";
 import { MyBookingsSkeleton } from "../components/Skeleton";
 import ConfirmDialog from "../components/ConfirmDialog";
+import Pagination from "../components/Pagination";
+
+const ITEMS_PER_PAGE = 10;
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -21,20 +24,44 @@ function formatDateTime(dateStr) {
 export default function MyBookings() {
   const { addToast } = useToast();
   const { pushUndo, popUndo, peekUndo, getSize } = useUndoStack();
-  const [bookings, setBookings] = useState([]);
+  const [bookingsData, setBookingsData] = useState({
+    bookings: [],
+    total: 0,
+    page: 1,
+    totalPages: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
   const [undoing, setUndoing] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const bookings = bookingsData.bookings;
+
+  const fetchBookings = useCallback(async (page = 1) => {
+    setLoading(true);
+    try {
+      const data = await apiRequest(
+        `/bookings?page=${page}&limit=${ITEMS_PER_PAGE}`,
+      );
+      setBookingsData({
+        bookings: data.bookings || [],
+        total: data.total || 0,
+        page: data.page || page,
+        totalPages: data.totalPages || 0,
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    apiRequest("/bookings")
-      .then(setBookings)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+    fetchBookings(currentPage);
+  }, [currentPage, fetchBookings]);
 
   function handleCancelClick(booking) {
     setBookingToCancel(booking);
@@ -53,11 +80,12 @@ export default function MyBookings() {
       const booking = bookings.find((b) => b.id === bookingId);
 
       await apiRequest(`/bookings/${bookingId}/cancel`, { method: "PATCH" });
-      setBookings((prev) =>
-        prev.map((b) =>
+      setBookingsData((prev) => ({
+        ...prev,
+        bookings: prev.bookings.map((b) =>
           b.id === bookingId ? { ...b, status: "CANCELLED" } : b,
         ),
-      );
+      }));
 
       // Push undo action onto the stack
       if (booking) {
@@ -95,8 +123,7 @@ export default function MyBookings() {
       });
 
       // Refresh bookings to show the restored booking
-      const updatedBookings = await apiRequest("/bookings");
-      setBookings(updatedBookings);
+      await fetchBookings(currentPage);
 
       addToast(
         `Booking restored: ${action.movieTitle} — Seat ${action.seatNumber}`,
@@ -117,7 +144,11 @@ export default function MyBookings() {
   const lastAction = peekUndo();
   const stackSize = getSize();
 
-  if (loading) {
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  if (loading && bookings.length === 0) {
     return <MyBookingsSkeleton />;
   }
 
@@ -140,7 +171,7 @@ export default function MyBookings() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Bookings</h1>
           <p className="text-sm opacity-60 mt-1">
-            {bookings.length} booking{bookings.length !== 1 ? "s" : ""}
+            {bookingsData.total} booking{bookingsData.total !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -246,141 +277,152 @@ export default function MyBookings() {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {bookings.map((booking) => {
-            const schedule = booking.schedule;
-            const movie = schedule?.movie;
-            const isCancelled = booking.status === "CANCELLED";
+        <>
+          <div className="space-y-4">
+            {bookings.map((booking) => {
+              const schedule = booking.schedule;
+              const movie = schedule?.movie;
+              const isCancelled = booking.status === "CANCELLED";
 
-            return (
-              <div
-                key={booking.id}
-                className={`card bg-base-200 shadow-md hover:shadow-lg transition-all duration-300 ${
-                  isCancelled ? "opacity-60" : ""
-                }`}
-              >
+              return (
                 <div
-                  className={`h-1.5 bg-gradient-to-r ${
-                    isCancelled
-                      ? "from-base-content/20 via-base-content/10 to-base-content/20"
-                      : "from-primary/40 via-primary/30 to-secondary/40"
+                  key={booking.id}
+                  className={`card bg-base-200 shadow-md hover:shadow-lg transition-all duration-300 ${
+                    isCancelled ? "opacity-60" : ""
                   }`}
-                />
+                >
+                  <div
+                    className={`h-1.5 bg-gradient-to-r ${
+                      isCancelled
+                        ? "from-base-content/20 via-base-content/10 to-base-content/20"
+                        : "from-primary/40 via-primary/30 to-secondary/40"
+                    }`}
+                  />
 
-                <div className="card-body p-4 md:p-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Left: Booking Info */}
-                    <div className="space-y-2 flex-1 min-w-0">
-                      {/* Top Row: Movie + Status */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg font-bold truncate">
-                          {movie?.title || "Movie"}
-                        </h3>
-                        <span
-                          className={`badge badge-sm ${
-                            isCancelled ? "badge-soft" : "badge-success"
-                          }`}
-                        >
-                          {isCancelled ? "Cancelled" : booking.status}
-                        </span>
-                      </div>
-
-                      {/* Details */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-70">
-                        {schedule && (
-                          <span className="flex items-center gap-1">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                              className="w-3.5 h-3.5"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            {formatDateTime(schedule.showTime)}
-                          </span>
-                        )}
-                        {schedule?.studio && (
-                          <span className="flex items-center gap-1">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                              className="w-3.5 h-3.5"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V4.25A2.25 2.25 0 0015.75 2H4.25zM6 5.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h5a1 1 0 000-2H6z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            {schedule.studio}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 font-semibold text-primary">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="w-3.5 h-3.5"
+                  <div className="card-body p-4 md:p-5">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      {/* Left: Booking Info */}
+                      <div className="space-y-2 flex-1 min-w-0">
+                        {/* Top Row: Movie + Status */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg font-bold truncate">
+                            {movie?.title || "Movie"}
+                          </h3>
+                          <span
+                            className={`badge badge-sm ${
+                              isCancelled ? "badge-soft" : "badge-success"
+                            }`}
                           >
-                            <path
-                              fillRule="evenodd"
-                              d="M2 4.5A2.5 2.5 0 014.5 2h11a2.5 2.5 0 012.5 2.5v11a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 012 15.5v-11zm8-1.5a5 5 0 100 10 5 5 0 000-10z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Seat {booking.seatNumber}
-                        </span>
-                      </div>
-                    </div>
+                            {isCancelled ? "Cancelled" : booking.status}
+                          </span>
+                        </div>
 
-                    {/* Right: Action */}
-                    <div className="flex items-center gap-2 md:shrink-0">
-                      <span className="text-xs opacity-40 font-mono">
-                        #{booking.id}
-                      </span>
-                      {!isCancelled && (
-                        <button
-                          onClick={() => handleCancelClick(booking)}
-                          disabled={cancellingId === booking.id}
-                          className="btn btn-outline btn-error btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
-                        >
-                          {cancellingId === booking.id ? (
-                            <>
-                              <span className="loading loading-spinner loading-xs" />
-                              Cancelling...
-                            </>
-                          ) : (
-                            <>
+                        {/* Details */}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-70">
+                          {schedule && (
+                            <span className="flex items-center gap-1">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
-                                className="w-4 h-4"
+                                className="w-3.5 h-3.5"
                               >
                                 <path
                                   fillRule="evenodd"
-                                  d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c-.84 0-1.673.025-2.5.075V3.75c0-.69.56-1.25 1.25-1.25h2.5c.69 0 1.25.56 1.25 1.25v.325C11.673 4.025 10.84 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
                                   clipRule="evenodd"
                                 />
                               </svg>
-                              Cancel
-                            </>
+                              {formatDateTime(schedule.showTime)}
+                            </span>
                           )}
-                        </button>
-                      )}
+                          {schedule?.studio && (
+                            <span className="flex items-center gap-1">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-3.5 h-3.5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V4.25A2.25 2.25 0 0015.75 2H4.25zM6 5.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h5a1 1 0 000-2H6z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              {schedule.studio}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 font-semibold text-primary">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              className="w-3.5 h-3.5"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M2 4.5A2.5 2.5 0 014.5 2h11a2.5 2.5 0 012.5 2.5v11a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 012 15.5v-11zm8-1.5a5 5 0 100 10 5 5 0 000-10z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            Seat {booking.seatNumber}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Right: Action */}
+                      <div className="flex items-center gap-2 md:shrink-0">
+                        <span className="text-xs opacity-40 font-mono">
+                          #{booking.id}
+                        </span>
+                        {!isCancelled && (
+                          <button
+                            onClick={() => handleCancelClick(booking)}
+                            disabled={cancellingId === booking.id}
+                            className="btn btn-outline btn-error btn-sm gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
+                          >
+                            {cancellingId === booking.id ? (
+                              <>
+                                <span className="loading loading-spinner loading-xs" />
+                                Cancelling...
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                  className="w-4 h-4"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c-.84 0-1.673.025-2.5.075V3.75c0-.69.56-1.25 1.25-1.25h2.5c.69 0 1.25.56 1.25 1.25v.325C11.673 4.025 10.84 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                Cancel
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={bookingsData.totalPages}
+            totalItems={bookingsData.total}
+            onPageChange={handlePageChange}
+            loading={loading}
+          />
+        </>
       )}
 
       {/* Inline error for cancellation failures */}

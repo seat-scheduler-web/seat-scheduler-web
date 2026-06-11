@@ -13,6 +13,9 @@ import {
   isPositiveId,
 } from "../lib/validation.js";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 10;
+
 async function getBooking(req, res, next) {
   try {
     if (!isPositiveId(req.params.id)) {
@@ -71,8 +74,15 @@ async function addBooking(req, res, next) {
 
 async function listUserBookings(req, res, next) {
   try {
-    const bookings = await getBookingsByUser(req.userId);
-    res.json(bookings);
+    // Parse pagination params
+    const page = Math.max(1, parseInt(req.query.page) || DEFAULT_PAGE);
+    const limit = Math.min(
+      50,
+      Math.max(1, parseInt(req.query.limit) || DEFAULT_LIMIT),
+    );
+
+    const result = await getBookingsByUser(req.userId, page, limit);
+    res.json(result);
   } catch (error) {
     next(error);
   }
