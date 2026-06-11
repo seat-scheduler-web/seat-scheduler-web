@@ -17,6 +17,10 @@ import {
   setSecurityHeaders,
 } from "./middlewares/sanitizeMiddleware.js";
 import { csrfProtection } from "./middlewares/csrfMiddleware.js";
+import {
+  httpsRedirect,
+  setHttpsSecurityHeaders,
+} from "./middlewares/httpsRedirectMiddleware.js";
 
 dotenv.config();
 
@@ -40,7 +44,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(sanitizeInput);
 app.use(setSecurityHeaders);
+app.use(setHttpsSecurityHeaders);
 app.use(csrfProtection);
+app.use(httpsRedirect);
 
 // Apply rate limiting to API routes
 applyRateLimiting(app);
