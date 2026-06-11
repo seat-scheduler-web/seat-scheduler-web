@@ -12,12 +12,47 @@ import { searchMovie, getPosterUrl } from "../lib/tmdb.js";
 import { get, set, invalidatePrefix } from "../lib/cache.js";
 
 const CACHE_TTL = 60; // seconds
-const CACHE_KEY_MOVIES = "movies:list";
 const CACHE_KEY_SECTIONS = "movies:sections";
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 12;
+
+function getMovieListCacheKey(filters) {
+  const { page, limit, search, duration, price, studio, time, sort } = filters;
+  return `movies:list:page:${page}:limit:${limit}:search:${search}:dur:${duration}:price:${price}:studio:${studio}:time:${time}:sort:${sort}`;
+}
 
 async function listMovies(req, res, next) {
   try {
-    const { view } = req.query;
+    const {
+      view,
+      page: pageStr,
+      limit: limitStr,
+      search = "",
+      duration = "all",
+      price = "all",
+      studio = "all",
+      time = "all",
+      sort = "default",
+    } = req.query;
+
+    // Parse pagination params
+    const page = Math.max(1, parseInt(pageStr) || DEFAULT_PAGE);
+    const limit = Math.min(
+      50,
+      Math.max(1, parseInt(limitStr) || DEFAULT_LIMIT),
+    );
+
+    // Build filter params object
+    const filterParams = {
+      page,
+      limit,
+      search,
+      duration,
+      price,
+      studio,
+      time,
+      sort,
+    };
 
     if (view === "sections") {
       // Check cache first
@@ -92,18 +127,19 @@ async function listMovies(req, res, next) {
       return;
     }
 
-    // Check cache for regular movie list
-    const cached = get(CACHE_KEY_MOVIES);
+    // Check cache for regular movie list (filter-specific)
+    const cacheKey = getMovieListCacheKey(filterParams);
+    const cached = get(cacheKey);
     if (cached) {
       res.set("X-Cache", "HIT");
       res.json(cached);
       return;
     }
 
-    const movies = await getMovies();
-    set(CACHE_KEY_MOVIES, movies, CACHE_TTL);
+    const result = await getMovies(filterParams);
+    set(cacheKey, result, CACHE_TTL);
     res.set("X-Cache", "MISS");
-    res.json(movies);
+    res.json(result);
   } catch (error) {
     next(error);
   }
