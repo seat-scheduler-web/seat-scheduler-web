@@ -12,7 +12,7 @@ function csrfProtection(req, res, next) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     const token = generateToken();
     res.cookie(CSRF_COOKIE_NAME, token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",

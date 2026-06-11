@@ -43,7 +43,7 @@ describe("csrfMiddleware", () => {
         "csrf_token",
         expect.any(String),
         expect.objectContaining({
-          httpOnly: true,
+          httpOnly: false,
           sameSite: "strict",
           path: "/",
         }),
