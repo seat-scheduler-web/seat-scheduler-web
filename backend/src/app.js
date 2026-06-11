@@ -10,6 +10,7 @@ import { movieRoutes } from "./routes/movieRoutes.js";
 import { scheduleRoutes } from "./routes/scheduleRoutes.js";
 import { userRoutes } from "./routes/userRoutes.js";
 import { stats as cacheStats, clear as clearCache } from "./lib/cache.js";
+import { applyRateLimiting } from "./middlewares/rateLimitMiddleware.js";
 
 dotenv.config();
 
@@ -30,6 +31,9 @@ app.use(
   }),
 );
 app.use(express.json());
+
+// Apply rate limiting to API routes
+applyRateLimiting(app);
 
 // Cache headers middleware for GET responses
 app.use((req, res, next) => {
