@@ -11,6 +11,10 @@ import { scheduleRoutes } from "./routes/scheduleRoutes.js";
 import { userRoutes } from "./routes/userRoutes.js";
 import { stats as cacheStats, clear as clearCache } from "./lib/cache.js";
 import { applyRateLimiting } from "./middlewares/rateLimitMiddleware.js";
+import {
+  sanitizeInput,
+  setSecurityHeaders,
+} from "./middlewares/sanitizeMiddleware.js";
 
 dotenv.config();
 
@@ -31,6 +35,8 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(sanitizeInput);
+app.use(setSecurityHeaders);
 
 // Apply rate limiting to API routes
 applyRateLimiting(app);
