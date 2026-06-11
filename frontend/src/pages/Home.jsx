@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { MovieCardSkeleton, SectionSkeleton } from "../components/Skeleton";
@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useBuyerQueue } from "../context/BuyerQueueContext";
 import { useToast } from "../components/Toast";
 import { useDebounce } from "../hooks/useDebounce";
+import Pagination from "../components/Pagination";
 
 function formatDateTime(dateStr) {
   const date = new Date(dateStr);
@@ -92,6 +93,8 @@ const TIME_FILTERS = [
   { value: "evening", label: "Evening (6PM+)" },
 ];
 
+const ITEMS_PER_PAGE = 12;
+
 function getGenreColor(genre) {
   if (!genre) return "badge-soft";
   return genreColors[genre] || "badge-soft";
@@ -124,7 +127,6 @@ function HighlightText({ text, query }) {
   );
 }
 
-// Movie Poster Component - Larger and more prominent
 function MoviePoster({ movie, index, size = "normal" }) {
   const gradient = movieGradients[index % movieGradients.length];
   const icons = ["🎬", "🎥", "🎞️", "🍿", "🎭", "🎪", "🎦", "📽️"];
@@ -163,14 +165,12 @@ function MoviePoster({ movie, index, size = "normal" }) {
         </>
       )}
 
-      {/* Duration badge */}
       <div className="absolute top-3 right-3 z-10">
         <span className="badge badge-soft badge-sm bg-black/40 text-white border-0 backdrop-blur-sm font-medium">
           {formatDuration(movie.duration)}
         </span>
       </div>
 
-      {/* Genre badge */}
       {movie.genre && (
         <div className="absolute top-3 left-3 z-10">
           <span
@@ -184,13 +184,6 @@ function MoviePoster({ movie, index, size = "normal" }) {
   );
 }
 
-function getDurationCategory(minutes) {
-  if (minutes < 90) return "short";
-  if (minutes <= 150) return "medium";
-  return "long";
-}
-
-// Horizontal scrolling section component
 function ContentSection({
   title,
   icon,
@@ -215,17 +208,11 @@ function ContentSection({
     }
   };
 
-  if (loading) {
-    return <SectionSkeleton />;
-  }
-
-  if (!movies || movies.length === 0) {
-    return null;
-  }
+  if (loading) return <SectionSkeleton />;
+  if (!movies || movies.length === 0) return null;
 
   return (
     <section className="space-y-4">
-      {/* Section Header */}
       <div className="flex items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-3">
           <span className="text-2xl">{icon}</span>
@@ -274,7 +261,6 @@ function ContentSection({
         </div>
       </div>
 
-      {/* Horizontal Scroll Container */}
       <div
         ref={scrollRef}
         className="flex gap-4 overflow-x-auto pb-4 px-4 md:px-6 scrollbar-hide"
@@ -296,9 +282,7 @@ function ContentSection({
               className="flex-none w-64 md:w-72 card bg-base-200 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group"
             >
               <MoviePoster movie={movie} index={index} size="large" />
-
               <div className="card-body p-4">
-                {/* Badges Row: Section Type + Rating + Price */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {sectionType === "popular" && movie.bookingCount > 0 && (
                     <span className="badge badge-primary badge-xs">
@@ -327,26 +311,12 @@ function ContentSection({
                   )}
                 </div>
 
-                {/* Title */}
                 <h3 className="card-title text-base font-bold leading-tight mt-2 group-hover:text-primary transition-colors duration-200 line-clamp-1">
                   <HighlightText text={movie.title} query={searchQuery} />
                 </h3>
 
-                {/* Studios */}
                 {uniqueStudios.length > 0 && (
                   <div className="flex items-center gap-1 mt-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="w-3 h-3 opacity-50"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V4.25A2.25 2.25 0 0015.75 2H4.25zM6 5.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h5a1 1 0 000-2H6z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
                     <span className="text-xs opacity-60">
                       {uniqueStudios.slice(0, 2).join(", ")}
                       {uniqueStudios.length > 2 &&
@@ -355,7 +325,6 @@ function ContentSection({
                   </div>
                 )}
 
-                {/* Description */}
                 {movie.description && (
                   <p className="text-xs opacity-60 leading-relaxed mt-1 line-clamp-2">
                     <HighlightText
@@ -365,7 +334,6 @@ function ContentSection({
                   </p>
                 )}
 
-                {/* Showtimes */}
                 {movie.schedules && movie.schedules.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-base-300">
                     <div className="flex flex-wrap gap-1.5">
@@ -375,18 +343,6 @@ function ContentSection({
                           to={`/schedules/${schedule.id}`}
                           className="btn btn-outline btn-xs gap-1 hover:btn-primary transition-all duration-200"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="w-3 h-3"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
                           {formatDateTime(schedule.showTime)}
                         </Link>
                       ))}
@@ -396,7 +352,6 @@ function ContentSection({
                         </span>
                       )}
                     </div>
-
                     <button
                       onClick={() => {
                         if (!user) {
@@ -409,14 +364,6 @@ function ContentSection({
                       }}
                       className="btn btn-primary btn-sm w-full mt-3 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="w-4 h-4"
-                      >
-                        <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
-                      </svg>
                       {user ? "Book Now" : "Login to Book"}
                     </button>
                   </div>
@@ -430,7 +377,6 @@ function ContentSection({
   );
 }
 
-// Active Filter Badge Component
 function ActiveFilterBadge({ label, onClear }) {
   return (
     <span className="badge badge-primary badge-sm gap-1">
@@ -454,7 +400,12 @@ export default function Home() {
   const { joinQueue } = useBuyerQueue();
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const [movies, setMovies] = useState([]);
+  const [moviesData, setMoviesData] = useState({
+    movies: [],
+    total: 0,
+    page: 1,
+    totalPages: 0,
+  });
   const [sections, setSections] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sectionsLoading, setSectionsLoading] = useState(true);
@@ -468,8 +419,11 @@ export default function Home() {
   const [studioFilter, setStudioFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Get unique studios from movies
+  const movies = moviesData.movies;
+
+  // Get unique studios from current page of movies
   const availableStudios = useMemo(() => {
     const studios = new Set();
     movies.forEach((movie) => {
@@ -480,159 +434,69 @@ export default function Home() {
     return Array.from(studios).sort();
   }, [movies]);
 
-  useEffect(() => {
-    // Fetch all movies for the main list
-    apiRequest("/movies")
-      .then(setMovies)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+  // Build API URL with all filter params
+  const buildApiUrl = useCallback(
+    (page = 1) => {
+      const params = new URLSearchParams();
+      params.set("page", page.toString());
+      params.set("limit", ITEMS_PER_PAGE.toString());
+      if (debouncedSearchQuery.trim())
+        params.set("search", debouncedSearchQuery.trim());
+      if (sortBy !== "default") params.set("sort", sortBy);
+      if (durationFilter !== "all") params.set("duration", durationFilter);
+      if (priceFilter !== "all") params.set("price", priceFilter);
+      if (studioFilter !== "all") params.set("studio", studioFilter);
+      if (timeFilter !== "all") params.set("time", timeFilter);
+      return `/movies?${params.toString()}`;
+    },
+    [
+      debouncedSearchQuery,
+      sortBy,
+      durationFilter,
+      priceFilter,
+      studioFilter,
+      timeFilter,
+    ],
+  );
 
-    // Fetch content sections
+  // Fetch movies with pagination and filters from backend
+  const fetchMovies = useCallback(
+    async (page = 1) => {
+      setLoading(true);
+      try {
+        const data = await apiRequest(buildApiUrl(page));
+        setMoviesData({
+          movies: data.movies || [],
+          total: data.total || 0,
+          page: data.page || page,
+          totalPages: data.totalPages || 0,
+        });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [buildApiUrl],
+  );
+
+  useEffect(() => {
+    fetchMovies(currentPage);
     apiRequest("/movies?view=sections")
       .then(setSections)
       .catch(() => setSections(null))
       .finally(() => setSectionsLoading(false));
-  }, []);
+  }, [currentPage, fetchMovies]);
 
   // Track debounce loading state
   useEffect(() => {
-    if (searchQuery !== debouncedSearchQuery) {
-      setIsSearching(true);
-    } else {
-      setIsSearching(false);
-    }
+    setIsSearching(searchQuery !== debouncedSearchQuery);
   }, [searchQuery, debouncedSearchQuery]);
 
-  const processedMovies = useMemo(() => {
-    let result = [...movies];
-
-    // 1. Search filter (using debounced value)
-    if (debouncedSearchQuery.trim()) {
-      const query = debouncedSearchQuery.toLowerCase().trim();
-      result = result.filter((movie) => {
-        const titleMatch = movie.title?.toLowerCase().includes(query);
-        const descMatch = movie.description?.toLowerCase().includes(query);
-        const genreMatch = movie.genre?.toLowerCase().includes(query);
-        return titleMatch || descMatch || genreMatch;
-      });
-    }
-
-    // 2. Duration filter
-    if (durationFilter !== "all") {
-      result = result.filter(
-        (movie) => getDurationCategory(movie.duration) === durationFilter,
-      );
-    }
-
-    // 3. Price filter
-    if (priceFilter !== "all") {
-      result = result.filter((movie) => {
-        const prices = movie.schedules?.map((s) => s.price) || [];
-        if (prices.length === 0) return false;
-        const minPrice = Math.min(...prices);
-        switch (priceFilter) {
-          case "low":
-            return minPrice < 40000;
-          case "medium":
-            return minPrice >= 40000 && minPrice <= 60000;
-          case "high":
-            return minPrice > 60000;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // 4. Studio filter
-    if (studioFilter !== "all") {
-      result = result.filter((movie) =>
-        movie.schedules?.some((s) => s.studio === studioFilter),
-      );
-    }
-
-    // 5. Time of day filter
-    if (timeFilter !== "all") {
-      result = result.filter((movie) => {
-        return movie.schedules?.some((schedule) => {
-          const hour = new Date(schedule.showTime).getHours();
-          switch (timeFilter) {
-            case "morning":
-              return hour >= 6 && hour < 12;
-            case "afternoon":
-              return hour >= 12 && hour < 18;
-            case "evening":
-              return hour >= 18 || hour < 6;
-            default:
-              return true;
-          }
-        });
-      });
-    }
-
-    // 6. Sort
-    switch (sortBy) {
-      case "title-asc":
-        result.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "title-desc":
-        result.sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      case "duration-asc":
-        result.sort((a, b) => a.duration - b.duration);
-        break;
-      case "duration-desc":
-        result.sort((a, b) => b.duration - a.duration);
-        break;
-      case "newest":
-        result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        break;
-      case "price-asc":
-        result.sort((a, b) => {
-          const aPrice = Math.min(
-            ...(a.schedules?.map((s) => s.price) || [Infinity]),
-          );
-          const bPrice = Math.min(
-            ...(b.schedules?.map((s) => s.price) || [Infinity]),
-          );
-          return aPrice - bPrice;
-        });
-        break;
-      case "price-desc":
-        result.sort((a, b) => {
-          const aPrice = Math.min(
-            ...(a.schedules?.map((s) => s.price) || [Infinity]),
-          );
-          const bPrice = Math.min(
-            ...(b.schedules?.map((s) => s.price) || [Infinity]),
-          );
-          return bPrice - aPrice;
-        });
-        break;
-      case "popularity":
-        result.sort((a, b) => {
-          const aCount =
-            a.schedules?.reduce(
-              (acc, s) => acc + (s.bookings?.length || 0),
-              0,
-            ) || 0;
-          const bCount =
-            b.schedules?.reduce(
-              (acc, s) => acc + (s.bookings?.length || 0),
-              0,
-            ) || 0;
-          return bCount - aCount;
-        });
-        break;
-      case "rating":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      default:
-        break;
-    }
-
-    return result;
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
   }, [
-    movies,
     debouncedSearchQuery,
     sortBy,
     durationFilter,
@@ -656,9 +520,14 @@ export default function Home() {
     setPriceFilter("all");
     setStudioFilter("all");
     setTimeFilter("all");
+    setCurrentPage(1);
   };
 
-  // Get active filter labels for display
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const activeFilterLabels = useMemo(() => {
     const labels = [];
     if (durationFilter !== "all") {
@@ -685,10 +554,9 @@ export default function Home() {
     return labels;
   }, [durationFilter, priceFilter, studioFilter, timeFilter]);
 
-  if (loading) {
+  if (loading && movies.length === 0) {
     return (
       <div className="space-y-8">
-        {/* Hero Skeleton */}
         <div className="hero min-h-[40vh] bg-base-200 rounded-2xl animate-pulse">
           <div className="hero-content text-center">
             <div className="space-y-4">
@@ -698,8 +566,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* Section Skeletons */}
         <div className="space-y-8">
           <SectionSkeleton />
           <SectionSkeleton />
@@ -708,7 +574,7 @@ export default function Home() {
     );
   }
 
-  if (error) {
+  if (error && movies.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="text-6xl">🎬</div>
@@ -723,7 +589,7 @@ export default function Home() {
     );
   }
 
-  if (!movies.length) {
+  if (!moviesData.total && !loading) {
     return (
       <div className="hero min-h-[60vh]">
         <div className="hero-content text-center">
@@ -758,7 +624,6 @@ export default function Home() {
               Browse the latest movies and book your perfect seat
             </p>
 
-            {/* Prominent Search Bar */}
             <div className="max-w-xl mx-auto">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -823,17 +688,17 @@ export default function Home() {
             <div className="flex items-center justify-center gap-2 text-sm opacity-60">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span>
-                {movies.length} movie{movies.length !== 1 ? "s" : ""} available
+                {moviesData.total} movie{moviesData.total !== 1 ? "s" : ""}{" "}
+                available
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Content Sections - Hidden when searching (using debounced value) */}
+      {/* Content Sections - Hidden when searching */}
       {!sectionsLoading && sections && !debouncedSearchQuery.trim() && (
         <div className="space-y-6">
-          {/* Now Popular */}
           <ContentSection
             title="Now Popular"
             icon="🔥"
@@ -842,8 +707,6 @@ export default function Home() {
             searchQuery={debouncedSearchQuery}
             sectionType="popular"
           />
-
-          {/* Trending */}
           <ContentSection
             title="Trending This Week"
             icon="📈"
@@ -852,8 +715,6 @@ export default function Home() {
             searchQuery={debouncedSearchQuery}
             sectionType="trending"
           />
-
-          {/* Coming Soon */}
           <ContentSection
             title="Coming Soon"
             icon="🎟️"
@@ -862,8 +723,6 @@ export default function Home() {
             searchQuery={debouncedSearchQuery}
             sectionType="coming-soon"
           />
-
-          {/* Newest */}
           <ContentSection
             title="Newest Additions"
             icon="✨"
@@ -884,15 +743,14 @@ export default function Home() {
 
       {/* All Movies Section with Filters */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 pb-8">
-        {/* Section Header with Filter Toggle */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <h2 className="text-xl md:text-2xl font-bold tracking-tight">
               {hasActiveFilters ? "Search Results" : "Browse All"}
             </h2>
             <span className="badge badge-soft badge-sm">
-              {processedMovies.length}{" "}
-              {processedMovies.length === 1 ? "title" : "titles"}
+              {movies.length} {movies.length === 1 ? "title" : "titles"}
+              {hasActiveFilters && ` of ${moviesData.total}`}
             </span>
           </div>
 
@@ -901,18 +759,6 @@ export default function Home() {
               onClick={() => setShowFilters(!showFilters)}
               className={`btn btn-sm gap-2 ${showFilters ? "btn-primary" : "btn-ghost"}`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-5.757a2.25 2.25 0 00-.659-1.591L2.659 6.22A2.25 2.25 0 012 4.629V2.34a.75.75 0 01.628-.74z"
-                  clipRule="evenodd"
-                />
-              </svg>
               Filters
               {activeFilterLabels.length > 0 && (
                 <span className="badge badge-sm badge-primary">
@@ -920,27 +766,17 @@ export default function Home() {
                 </span>
               )}
             </button>
-
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
                 className="btn btn-ghost btn-sm gap-1.5 text-sm opacity-60 hover:opacity-100"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="w-4 h-4"
-                >
-                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                </svg>
                 Clear
               </button>
             )}
           </div>
         </div>
 
-        {/* Active Filter Badges */}
         {activeFilterLabels.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {activeFilterLabels.map((filter) => (
@@ -958,13 +794,10 @@ export default function Home() {
           </div>
         )}
 
-        {/* Expandable Filter Panel */}
         {showFilters && (
           <div className="card bg-base-200 shadow-sm mb-6">
             <div className="card-body p-4 space-y-4">
-              {/* First Row: Sort & Duration */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Sort Dropdown */}
                 <div>
                   <label className="label label-text text-sm opacity-60 mb-1">
                     Sort by
@@ -981,8 +814,6 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
-
-                {/* Duration Filter Dropdown */}
                 <div>
                   <label className="label label-text text-sm opacity-60 mb-1">
                     Duration
@@ -999,8 +830,6 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
-
-                {/* Price Filter Dropdown */}
                 <div>
                   <label className="label label-text text-sm opacity-60 mb-1">
                     Price
@@ -1017,8 +846,6 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
-
-                {/* Time of Day Filter Dropdown */}
                 <div>
                   <label className="label label-text text-sm opacity-60 mb-1">
                     Time of Day
@@ -1036,8 +863,6 @@ export default function Home() {
                   </select>
                 </div>
               </div>
-
-              {/* Second Row: Studio Filter */}
               {availableStudios.length > 0 && (
                 <div>
                   <label className="label label-text text-sm opacity-60 mb-1">
@@ -1062,7 +887,7 @@ export default function Home() {
         )}
 
         {/* Empty State */}
-        {processedMovies.length === 0 ? (
+        {movies.length === 0 && !loading ? (
           <div className="hero min-h-[40vh]">
             <div className="hero-content text-center">
               <div className="max-w-md space-y-4">
@@ -1084,193 +909,153 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          /* Movie Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {processedMovies.map((movie, index) => {
-              const firstSchedule = movie.schedules?.[0];
-              const genre = movie.genre;
-              const genreColor = getGenreColor(genre);
-              const minPrice =
-                movie.schedules?.length > 0
-                  ? Math.min(...movie.schedules.map((s) => s.price))
-                  : null;
-              const uniqueStudios = [
-                ...new Set(movie.schedules?.map((s) => s.studio) || []),
-              ];
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {movies.map((movie, index) => {
+                const firstSchedule = movie.schedules?.[0];
+                const genre = movie.genre;
+                const genreColor = getGenreColor(genre);
+                const minPrice =
+                  movie.schedules?.length > 0
+                    ? Math.min(...movie.schedules.map((s) => s.price))
+                    : null;
+                const uniqueStudios = [
+                  ...new Set(movie.schedules?.map((s) => s.studio) || []),
+                ];
 
-              return (
-                <div
-                  key={movie.id}
-                  className="card bg-base-200 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group"
-                >
-                  <MoviePoster movie={movie} index={index} />
+                return (
+                  <div
+                    key={movie.id}
+                    className="card bg-base-200 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group"
+                  >
+                    <MoviePoster movie={movie} index={index} />
+                    <div className="card-body p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          {genre && (
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className={`badge ${genreColor} badge-xs`}>
+                                <HighlightText
+                                  text={genre}
+                                  query={searchQuery}
+                                />
+                              </span>
+                            </div>
+                          )}
+                          <h2 className="card-title text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-200">
+                            <HighlightText
+                              text={movie.title}
+                              query={searchQuery}
+                            />
+                          </h2>
+                        </div>
+                      </div>
 
-                  <div className="card-body p-5">
-                    {/* Genre Badge + Title Row */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        {genre && (
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className={`badge ${genreColor} badge-xs`}>
-                              <HighlightText text={genre} query={searchQuery} />
-                            </span>
-                          </div>
+                      <div className="flex items-center gap-2 mt-3">
+                        {movie.rating && (
+                          <span className="badge badge-warning badge-sm gap-1 font-bold">
+                            ★ {movie.rating.toFixed(1)}
+                          </span>
                         )}
-                        <h2 className="card-title text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-200">
+                        {minPrice && (
+                          <span className="badge badge-success badge-sm font-bold">
+                            {formatPrice(minPrice)}
+                          </span>
+                        )}
+                      </div>
+
+                      {uniqueStudios.length > 0 && (
+                        <div className="flex items-center gap-1 mt-2">
+                          <span className="text-xs opacity-60">
+                            {uniqueStudios.slice(0, 2).join(", ")}
+                            {uniqueStudios.length > 2 &&
+                              ` +${uniqueStudios.length - 2}`}
+                          </span>
+                        </div>
+                      )}
+
+                      {movie.description && (
+                        <p className="text-sm opacity-60 leading-relaxed mt-2 line-clamp-2">
                           <HighlightText
-                            text={movie.title}
+                            text={movie.description}
                             query={searchQuery}
                           />
-                        </h2>
-                      </div>
-                    </div>
-
-                    {/* Rating & Price - Prominent Badges */}
-                    <div className="flex items-center gap-2 mt-3">
-                      {movie.rating && (
-                        <span className="badge badge-warning badge-sm gap-1 font-bold">
-                          ★ {movie.rating.toFixed(1)}
-                        </span>
+                        </p>
                       )}
-                      {minPrice && (
-                        <span className="badge badge-success badge-sm font-bold">
-                          {formatPrice(minPrice)}
-                        </span>
-                      )}
-                    </div>
 
-                    {/* Studios */}
-                    {uniqueStudios.length > 0 && (
-                      <div className="flex items-center gap-1 mt-2">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="w-3.5 h-3.5 opacity-50"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M4.25 2A2.25 2.25 0 002 4.25v11.5A2.25 2.25 0 004.25 18h11.5A2.25 2.25 0 0018 15.75V4.25A2.25 2.25 0 0015.75 2H4.25zM6 5.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h8a1 1 0 000-2H6zm0 3.5a1 1 0 000 2h5a1 1 0 000-2H6z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span className="text-xs opacity-60">
-                          {uniqueStudios.slice(0, 2).join(", ")}
-                          {uniqueStudios.length > 2 &&
-                            ` +${uniqueStudios.length - 2}`}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Description */}
-                    {movie.description && (
-                      <p className="text-sm opacity-60 leading-relaxed mt-2 line-clamp-2">
-                        <HighlightText
-                          text={movie.description}
-                          query={searchQuery}
-                        />
-                      </p>
-                    )}
-
-                    {/* Schedules Section */}
-                    <div className="mt-4 pt-4 border-t border-base-300">
-                      {movie.schedules && movie.schedules.length > 0 ? (
-                        <>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-semibold uppercase tracking-wider opacity-50">
-                              Showtimes
-                            </span>
-                            <span className="badge badge-soft badge-xs">
-                              {movie.schedules.length}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            {movie.schedules.slice(0, 3).map((schedule) => (
-                              <Link
-                                key={schedule.id}
-                                to={`/schedules/${schedule.id}`}
-                                className="btn btn-outline btn-sm gap-1.5 hover:btn-primary hover:scale-105 transition-all duration-200"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                  className="w-3.5 h-3.5"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                {formatDateTime(schedule.showTime)}
-                              </Link>
-                            ))}
-                            {movie.schedules.length > 3 && (
-                              <span className="text-xs opacity-50 self-center">
-                                +{movie.schedules.length - 3} more
+                      <div className="mt-4 pt-4 border-t border-base-300">
+                        {movie.schedules && movie.schedules.length > 0 ? (
+                          <>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-semibold uppercase tracking-wider opacity-50">
+                                Showtimes
                               </span>
-                            )}
+                              <span className="badge badge-soft badge-xs">
+                                {movie.schedules.length}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {movie.schedules.slice(0, 3).map((schedule) => (
+                                <Link
+                                  key={schedule.id}
+                                  to={`/schedules/${schedule.id}`}
+                                  className="btn btn-outline btn-sm gap-1.5 hover:btn-primary hover:scale-105 transition-all duration-200"
+                                >
+                                  {formatDateTime(schedule.showTime)}
+                                </Link>
+                              ))}
+                              {movie.schedules.length > 3 && (
+                                <span className="text-xs opacity-50 self-center">
+                                  +{movie.schedules.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 text-xs opacity-40">
+                            No schedules available yet
                           </div>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs opacity-40">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="w-4 h-4"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M5.5 3.5A1.5 1.5 0 017 2h1.5a1.5 1.5 0 011.5 1.5v2.25a1.5 1.5 0 01-1.5 1.5H7a1.5 1.5 0 01-1.5-1.5V3.5zM5.5 10.75A1.5 1.5 0 017 9.25h1.5a1.5 1.5 0 011.5 1.5v2.25a1.5 1.5 0 01-1.5 1.5H7a1.5 1.5 0 01-1.5-1.5v-2.25zM10.5 3.5A1.5 1.5 0 0112 2h1.5a1.5 1.5 0 011.5 1.5v2.25a1.5 1.5 0 01-1.5 1.5H12a1.5 1.5 0 01-1.5-1.5V3.5zM10.5 10.75A1.5 1.5 0 0112 9.25h1.5a1.5 1.5 0 011.5 1.5v2.25a1.5 1.5 0 01-1.5 1.5H12a1.5 1.5 0 01-1.5-1.5v-2.25z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          No schedules available yet
-                        </div>
-                      )}
+                        )}
 
-                      {/* Book Now Button */}
-                      {movie.schedules && movie.schedules.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-base-300">
-                          <button
-                            onClick={() => {
-                              if (!user) {
+                        {movie.schedules && movie.schedules.length > 0 && (
+                          <div className="mt-4 pt-3 border-t border-base-300">
+                            <button
+                              onClick={() => {
+                                if (!user) {
+                                  addToast(
+                                    "Please login to book a seat",
+                                    "warning",
+                                  );
+                                  navigate("/login");
+                                  return;
+                                }
+                                joinQueue(movie.schedules[0].id, user);
                                 addToast(
-                                  "Please login to book a seat",
-                                  "warning",
+                                  "Choose a showtime below to pick your seat",
+                                  "info",
                                 );
-                                navigate("/login");
-                                return;
-                              }
-                              joinQueue(movie.schedules[0].id, user);
-                              addToast(
-                                "Choose a showtime below to pick your seat",
-                                "info",
-                              );
-                            }}
-                            className="btn btn-primary btn-sm w-full gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                              className="w-4 h-4"
+                              }}
+                              className="btn btn-primary btn-sm w-full gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                             >
-                              <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
-                            </svg>
-                            {user ? "Book Now" : "Login to Book"}
-                          </button>
-                        </div>
-                      )}
+                              {user ? "Book Now" : "Login to Book"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={moviesData.totalPages}
+              totalItems={moviesData.total}
+              onPageChange={handlePageChange}
+              loading={loading}
+            />
+          </>
         )}
       </section>
     </div>

@@ -231,7 +231,7 @@ describe("listUserBookings", () => {
   let req, res, next;
 
   beforeEach(() => {
-    req = { userId: 1 };
+    req = { userId: 1, query: {} };
     res = { json: vi.fn() };
     next = vi.fn();
     vi.clearAllMocks();
@@ -242,11 +242,23 @@ describe("listUserBookings", () => {
       { id: 1, seatNumber: "A1" },
       { id: 2, seatNumber: "B2" },
     ];
-    getBookingsByUser.mockResolvedValue(mockBookings);
+    getBookingsByUser.mockResolvedValue({
+      bookings: mockBookings,
+      total: 2,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
 
     await listUserBookings(req, res, next);
 
-    expect(res.json).toHaveBeenCalledWith(mockBookings);
+    expect(res.json).toHaveBeenCalledWith({
+      bookings: mockBookings,
+      total: 2,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
   });
 
   it("calls next with error on database failure", async () => {
@@ -256,6 +268,21 @@ describe("listUserBookings", () => {
     await listUserBookings(req, res, next);
 
     expect(next).toHaveBeenCalledWith(error);
+  });
+
+  it("passes pagination params to model", async () => {
+    req.query = { page: "2", limit: "5" };
+    getBookingsByUser.mockResolvedValue({
+      bookings: [],
+      total: 0,
+      page: 2,
+      limit: 5,
+      totalPages: 0,
+    });
+
+    await listUserBookings(req, res, next);
+
+    expect(getBookingsByUser).toHaveBeenCalledWith(1, 2, 5);
   });
 });
 
