@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { sendError } from "./lib/apiResponse.js";
 import { prisma } from "./lib/prisma.js";
@@ -15,6 +16,7 @@ import {
   sanitizeInput,
   setSecurityHeaders,
 } from "./middlewares/sanitizeMiddleware.js";
+import { csrfProtection } from "./middlewares/csrfMiddleware.js";
 
 dotenv.config();
 
@@ -35,8 +37,10 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(cookieParser());
 app.use(sanitizeInput);
 app.use(setSecurityHeaders);
+app.use(csrfProtection);
 
 // Apply rate limiting to API routes
 applyRateLimiting(app);
