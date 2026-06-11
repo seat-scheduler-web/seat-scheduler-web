@@ -122,7 +122,7 @@ describe("sanitizeMiddleware", () => {
 
       sanitizeInput(req, res, next);
 
-      expect(req.query.search).toBe("&lt;img src=x&gt;");
+      expect(req.sanitizedQuery.search).toBe("&lt;img src=x&gt;");
       expect(next).toHaveBeenCalled();
     });
 
@@ -133,7 +133,7 @@ describe("sanitizeMiddleware", () => {
 
       sanitizeInput(req, res, next);
 
-      expect(req.params.id).toBe("&lt;script&gt;");
+      expect(req.sanitizedParams.id).toBe("&lt;script&gt;");
       expect(next).toHaveBeenCalled();
     });
 

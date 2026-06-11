@@ -37,7 +37,8 @@ app.use(
   cors({
     origin: allowedOrigins,
     methods: ["GET", "POST", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-csrf-token"],
+    credentials: true,
   }),
 );
 app.use(express.json());
