@@ -1,0 +1,165 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#cba6f7', 'primaryTextColor': '#cdd6f4', 'primaryBorderColor': '#b4befe', 'lineColor': '#94e2d5', 'secondaryColor': '#45475a', 'tertiaryColor': '#313244', 'background': '#1e1e2e', 'mainBkg': '#45475a', 'nodeBorder': '#b4befe', 'clusterBkg': '#313244', 'titleColor': '#cdd6f4', 'edgeLabelBackground': '#45475a', 'fontFamily': 'JetBrainsMono Nerd Font', 'actorBorder': '#f38ba8', 'actorBkg': '#45475a', 'actorTextColor': '#f38ba8', 'actorLineColor': '#6c7086', 'signalColor': '#94e2d5', 'signalTextColor': '#cdd6f4', 'labelBoxBkgColor': '#313244', 'labelBoxBorderColor': '#b4befe', 'labelTextColor': '#cdd6f4', 'loopTextColor': '#cba6f7', 'activationBorderColor': '#94e2d5', 'activationBkgColor': '#313244', 'sequenceNumberColor': '#cdd6f4'}}}%%
+sequenceDiagram
+    autonumber
+    actor Admin
+    participant Frontend as Frontend<br/>(React Admin)
+    participant Auth as Auth<br/>Middleware
+    participant API as Admin<br/>Controller
+    participant DB as Database<br/>(Prisma)
+    participant Cache as Cache
+
+    rect rgb(49, 50, 68)
+        note over Admin,Cache: Admin Login
+        Admin->>Frontend: Login with admin credentials
+        Frontend->>API: POST /api/users/login {email, password}
+        API->>DB: SELECT user WHERE email
+        DB-->>API: User data
+        API->>API: bcrypt.compare(password, hash)
+        API->>API: Check role === "ADMIN"
+
+        alt Not admin
+            API-->>Frontend: 403 {error: "Access denied"}
+            Frontend-->>Admin: "Admin access only"
+        end
+
+        API->>API: Generate JWT token
+        API-->>Frontend: 200 {token, user}
+        Frontend-->>Admin: Redirect to /admin
+    end
+
+    rect rgb(49, 50, 68)
+        note over Admin,Cache: View All Bookings
+        Admin->>Frontend: Navigate to /admin/bookings
+        Frontend->>API: GET /api/admin/bookings
+        API->>Auth: Verify JWT + role
+        Auth-->>API: {userId, role: ADMIN}
+
+        alt Not authorized
+            Auth-->>API: 403 Forbidden
+            API-->>Frontend: 403 {error}
+            Frontend-->>Admin: "Access denied"
+        end
+
+        API->>DB: SELECT all bookings WITH user, schedule, movie
+        DB-->>API: Bookings list
+        API-->>Frontend: 200 [bookings]
+        Frontend-->>Admin: Display bookings table
+    end
+
+    rect rgb(49, 50, 68)
+        note over Admin,Cache: Add Movie
+        Admin->>Frontend: Click "Add Movie"
+        Frontend->>API: POST /api/movies {title, duration, genre, ...}
+        API->>Auth: Verify JWT + role
+        Auth-->>API: {userId, role: ADMIN}
+
+        alt Missing required fields
+            API-->>Frontend: 400 {error: "Title and duration required"}
+            Frontend-->>Admin: "Please fill required fields"
+        end
+
+        API->>DB: INSERT movie
+        DB-->>API: Created movie
+        API->>Cache: invalidatePrefix("movies:")
+        Cache-->>API: Cache cleared
+        API-->>Frontend: 201 {movie}
+        Frontend-->>Admin: "Movie added!"
+    end
+
+    rect rgb(49, 50, 68)
+        note over Admin,Cache: Edit Movie
+        Admin->>Frontend: Click edit on movie
+        Frontend->>API: PUT /api/movies/:id {title, duration, ...}
+        API->>Auth: Verify JWT + role
+        Auth-->>API: {userId, role: ADMIN}
+
+        API->>DB: SELECT movie WHERE id
+        DB-->>API: Movie data
+
+        alt Movie not found
+            API-->>Frontend: 404 {error: "Movie not found"}
+            Frontend-->>Admin: "Movie not found"
+        end
+
+        API->>DB: UPDATE movie
+        DB-->>API: Updated movie
+        API->>Cache: invalidatePrefix("movies:")
+        Cache-->>API: Cache cleared
+        API-->>Frontend: 200 {movie}
+        Frontend-->>Admin: "Movie updated!"
+    end
+
+    rect rgb(49, 50, 68)
+        note over Admin,Cache: Delete Movie
+        Admin->>Frontend: Click delete on movie
+        Frontend->>Frontend: Show confirmation dialog
+        Frontend-->>Admin: "Confirm deletion?"
+        Admin->>Frontend: Confirm delete
+        Frontend->>API: DELETE /api/movies/:id
+        API->>Auth: Verify JWT + role
+        Auth-->>API: {userId, role: ADMIN}
+
+        API->>DB: SELECT movie WHERE id
+        DB-->>API: Movie data
+
+        alt Movie not found
+            API-->>Frontend: 404 {error: "Movie not found"}
+            Frontend-->>Admin: "Movie not found"
+        end
+
+        API->>DB: DELETE schedules WHERE movieId (cascade)
+        API->>DB: DELETE movie WHERE id
+        DB-->>API: Deleted
+        API->>Cache: invalidatePrefix("movies:")
+        Cache-->>API: Cache cleared
+        API-->>Frontend: 200 {message}
+        Frontend-->>Admin: "Movie deleted!"
+    end
+
+    rect rgb(49, 50, 68)
+        note over Admin,Cache: Add Schedule
+        Admin->>Frontend: Click "Add Schedule"
+        Frontend->>API: POST /api/schedules {movieId, showTime, studio}
+        API->>Auth: Verify JWT + role
+        Auth-->>API: {userId, role: ADMIN}
+
+        API->>DB: SELECT movie WHERE id
+        DB-->>API: Movie data
+
+        alt Movie not found
+            API-->>Frontend: 404 {error: "Movie not found"}
+            Frontend-->>Admin: "Movie not found"
+        end
+
+        API->>DB: INSERT schedule
+        DB-->>API: Created schedule
+        API->>Cache: invalidatePrefix("schedules:")
+        Cache-->>API: Cache cleared
+        API->>Cache: invalidatePrefix("movies:sections")
+        Cache-->>API: Cache cleared
+        API-->>Frontend: 201 {schedule}
+        Frontend-->>Admin: "Schedule added!"
+    end
+
+    rect rgb(49, 50, 68)
+        note over Admin,Cache: Delete Schedule
+        Admin->>Frontend: Click delete on schedule
+        Frontend->>API: DELETE /api/admin/schedules/:id
+        API->>Auth: Verify JWT + role
+        Auth-->>API: {userId, role: ADMIN}
+
+        API->>DB: SELECT schedule WHERE id
+        DB-->>API: Schedule data
+
+        alt Schedule not found
+            API-->>Frontend: 404 {error: "Schedule not found"}
+            Frontend-->>Admin: "Schedule not found"
+        end
+
+        API->>DB: DELETE schedule WHERE id (cascades to bookings)
+        DB-->>API: Deleted
+        API->>Cache: invalidatePrefix("schedules:")
+        Cache-->>API: Cache cleared
+        API-->>Frontend: 200 {message}
+        Frontend-->>Admin: "Schedule deleted!"
+    end

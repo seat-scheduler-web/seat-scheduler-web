@@ -1,0 +1,47 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#cba6f7', 'primaryTextColor': '#cdd6f4', 'primaryBorderColor': '#b4befe', 'lineColor': '#94e2d5', 'secondaryColor': '#45475a', 'tertiaryColor': '#313244', 'background': '#1e1e2e', 'mainBkg': '#45475a', 'nodeBorder': '#b4befe', 'clusterBkg': '#313244', 'titleColor': '#cdd6f4', 'edgeLabelBackground': '#45475a', 'fontFamily': 'JetBrainsMono Nerd Font'}}}%%
+flowchart TB
+    subgraph Users["👥 Users"]
+        User["👤 User"]
+        Admin["👤 Admin"]
+    end
+
+    subgraph Frontend["⚛️ Frontend (React)"]
+        UI["UI Components<br/>Navbar, Footer, Cards"]
+        Pages["Pages<br/>Home, Login, Booking"]
+        Context["Context<br/>AuthContext, QueueContext"]
+        Hooks["Hooks<br/>useDebounce, useAuth"]
+        APIClient["API Client<br/>Axios"]
+    end
+
+    subgraph Backend["⚙️ Backend (Node.js/Express)"]
+        Routes["Routes<br/>REST API"]
+        Middlewares["Middlewares<br/>Auth, CSRF, Rate Limit"]
+        Controllers["Controllers<br/>User, Movie, Booking"]
+        Models["Models<br/>Prisma ORM"]
+        Services["Services<br/>Cache, JWT, TMDB"]
+    end
+
+    subgraph Database["🗄️ Database"]
+        MySQL["MySQL<br/>User, Movie, Schedule, Booking"]
+    end
+
+    External["🌐 TMDB API"]
+
+    User -->|"HTTPS"| UI
+    Admin -->|"HTTPS"| UI
+    UI --> Pages
+    Pages --> Context
+    Pages --> Hooks
+    APIClient -->|"JSON/HTTPS"| Routes
+    Routes --> Middlewares
+    Middlewares --> Controllers
+    Controllers --> Models
+    Models -->|"Prisma"| MySQL
+    Services -->|"API"| External
+    Controllers --> Services
+
+    style Users fill:#313244,stroke:#b4befe,color:#cdd6f4
+    style Frontend fill:#45475a,stroke:#94e2d5,color:#cdd6f4
+    style Backend fill:#45475a,stroke:#94e2d5,color:#cdd6f4
+    style Database fill:#45475a,stroke:#f9e2af,color:#cdd6f4
+    style External fill:#313244,stroke:#f38ba8,color:#cdd6f4
