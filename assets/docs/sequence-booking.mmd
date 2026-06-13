@@ -1,0 +1,113 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#cba6f7', 'primaryTextColor': '#cdd6f4', 'primaryBorderColor': '#b4befe', 'lineColor': '#94e2d5', 'secondaryColor': '#45475a', 'tertiaryColor': '#313244', 'background': '#1e1e2e', 'mainBkg': '#45475a', 'nodeBorder': '#b4befe', 'clusterBkg': '#313244', 'titleColor': '#cdd6f4', 'edgeLabelBackground': '#45475a', 'fontFamily': 'JetBrainsMono Nerd Font', 'actorBorder': '#b4befe', 'actorBkg': '#45475a', 'actorTextColor': '#cdd6f4', 'actorLineColor': '#6c7086', 'signalColor': '#94e2d5', 'signalTextColor': '#cdd6f4', 'labelBoxBkgColor': '#313244', 'labelBoxBorderColor': '#b4befe', 'labelTextColor': '#cdd6f4', 'loopTextColor': '#cba6f7', 'activationBorderColor': '#94e2d5', 'activationBkgColor': '#313244', 'sequenceNumberColor': '#cdd6f4'}}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant Frontend as Frontend<br/>(React)
+    participant Auth as Auth<br/>Middleware
+    participant API as API<br/>Controller
+    participant DB as Database<br/>(Prisma)
+
+    rect rgb(49, 50, 68)
+        note over User,DB: Browse & Select Movie
+        User->>Frontend: Browse movies
+        Frontend->>API: GET /api/movies
+        API->>DB: SELECT movies
+        DB-->>API: Movie list
+        API-->>Frontend: 200 [movies]
+        Frontend-->>User: Display movies
+
+        User->>Frontend: Select movie
+        Frontend->>API: GET /api/movies/:id
+        API->>DB: SELECT movie WITH schedules
+        DB-->>API: Movie details
+        API-->>Frontend: 200 {movie}
+        Frontend-->>User: Show movie details
+    end
+
+    rect rgb(49, 50, 68)
+        note over User,DB: View Seats
+        User->>Frontend: Select showtime
+        Frontend->>API: GET /api/schedules/:id/seats
+        API->>DB: SELECT schedule
+        DB-->>API: Schedule data
+        API->>DB: SELECT bookings WHERE scheduleId
+        DB-->>API: Booked seats
+        API->>API: Calculate available seats
+        API-->>Frontend: 200 {seats, available, booked}
+        Frontend-->>User: Display seat map
+    end
+
+    rect rgb(49, 50, 68)
+        note over User,DB: Confirm Booking
+        User->>Frontend: Select seat & confirm
+        Frontend->>API: POST /api/bookings {scheduleId, seatNumber}
+        
+        API->>Auth: Verify JWT token
+        Auth-->>API: {userId}
+
+        alt Invalid or expired token
+            Auth-->>API: 401 Unauthorized
+            API-->>Frontend: 401 {error}
+            Frontend-->>User: "Please login again"
+        end
+
+        API->>DB: SELECT schedule WHERE id
+        DB-->>API: Schedule data
+
+        alt Schedule not found
+            API-->>Frontend: 404 {error}
+            Frontend-->>User: "Schedule not found"
+        end
+
+        API->>DB: SELECT booking WHERE scheduleId AND seatNumber
+        DB-->>API: Existing booking
+
+        alt Seat already booked
+            API-->>Frontend: 409 {error}
+            Frontend-->>User: "Seat already taken"
+        end
+
+        API->>DB: INSERT booking (userId, scheduleId, seatNumber, CONFIRMED)
+        DB-->>API: Created booking
+        API-->>Frontend: 201 {booking}
+        Frontend-->>User: "Booking confirmed!"
+    end
+
+    rect rgb(49, 50, 68)
+        note over User,DB: View & Cancel Bookings
+        User->>Frontend: View my bookings
+        Frontend->>API: GET /api/bookings
+        API->>Auth: Verify JWT token
+        Auth-->>API: {userId}
+        API->>DB: SELECT bookings WHERE userId
+        DB-->>API: User bookings
+        API-->>Frontend: 200 [bookings]
+        Frontend-->>User: Display bookings
+
+        User->>Frontend: Cancel booking
+        Frontend->>API: DELETE /api/bookings/:id
+        API->>Auth: Verify JWT token
+        Auth-->>API: {userId}
+        API->>DB: SELECT booking WHERE id
+        DB-->>API: Booking data
+
+        alt Booking not found
+            API-->>Frontend: 404 {error}
+            Frontend-->>User: "Booking not found"
+        end
+
+        alt Not authorized (not own booking)
+            API-->>Frontend: 403 {error}
+            Frontend-->>User: "Not authorized"
+        end
+
+        alt Already cancelled
+            API-->>Frontend: 400 {error}
+            Frontend-->>User: "Already cancelled"
+        end
+
+        API->>DB: UPDATE booking SET status=CANCELLED
+        DB-->>API: Updated booking
+        API-->>Frontend: 200 {message}
+        Frontend-->>User: "Booking cancelled"
+    end

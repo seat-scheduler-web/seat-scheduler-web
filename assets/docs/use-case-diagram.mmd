@@ -1,0 +1,52 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#cba6f7', 'primaryTextColor': '#cdd6f4', 'primaryBorderColor': '#b4befe', 'lineColor': '#94e2d5', 'secondaryColor': '#45475a', 'tertiaryColor': '#313244', 'background': '#1e1e2e', 'mainBkg': '#45475a', 'nodeBorder': '#b4befe', 'clusterBkg': '#313244', 'titleColor': '#cdd6f4', 'edgeLabelBackground': '#45475a', 'fontFamily': 'JetBrainsMono Nerd Font'}}}%%
+flowchart TB
+    subgraph Actors["👥 Actors"]
+        User["👤 User"]
+        Admin["👤 Admin"]
+    end
+
+    subgraph UserCases["User Use Cases"]
+        UC1["Browse Movies"]
+        UC2["Search Movies"]
+        UC3["View Movie Details"]
+        UC4["Select Showtime"]
+        UC5["Select Seat"]
+        UC6["Confirm Booking"]
+        UC7["View My Bookings"]
+        UC8["Cancel Booking"]
+        UC9["Login / Register"]
+        UC10["Update Profile"]
+    end
+
+    subgraph AdminCases["Admin Use Cases"]
+        AC1["View All Bookings"]
+        AC2["Add Movie"]
+        AC3["Edit Movie"]
+        AC4["Delete Movie"]
+        AC5["Add Schedule"]
+        AC6["Delete Schedule"]
+        AC7["Search TMDB"]
+    end
+
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    User --> UC5
+    User --> UC6
+    User --> UC7
+    User --> UC8
+    User --> UC9
+    User --> UC10
+
+    Admin --> AC1
+    Admin --> AC2
+    Admin --> AC3
+    Admin --> AC4
+    Admin --> AC5
+    Admin --> AC6
+    Admin --> AC7
+
+    style Actors fill:#313244,stroke:#b4befe,color:#cdd6f4
+    style UserCases fill:#45475a,stroke:#94e2d5,color:#cdd6f4
+    style AdminCases fill:#45475a,stroke:#f38ba8,color:#cdd6f4

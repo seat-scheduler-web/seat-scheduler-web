@@ -1,0 +1,34 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#cba6f7', 'primaryTextColor': '#cdd6f4', 'primaryBorderColor': '#b4befe', 'lineColor': '#94e2d5', 'secondaryColor': '#45475a', 'tertiaryColor': '#313244', 'background': '#1e1e2e', 'mainBkg': '#45475a', 'nodeBorder': '#b4befe', 'clusterBkg': '#313244', 'titleColor': '#cdd6f4', 'edgeLabelBackground': '#45475a', 'fontFamily': 'JetBrainsMono Nerd Font'}}}%%
+flowchart TB
+    subgraph Client["🌐 Client"]
+        Browser["Web Browser<br/>Chrome, Firefox, Safari"]
+    end
+
+    subgraph Frontend["⚛️ Frontend Hosting"]
+        Vercel["Vercel / Netlify<br/>React App<br/>Static Files + CDN"]
+    end
+
+    subgraph Backend["⚙️ Backend Hosting"]
+        Railway["Railway / Render<br/>Node.js Server<br/>Express API"]
+    end
+
+    subgraph Database["🗄️ Database"]
+        MySQL["PlanetScale / MySQL<br/>Managed Database<br/>Prisma ORM"]
+    end
+
+    subgraph External["🌍 External Services"]
+        TMDB["TMDB API<br/>Movie Data"]
+        JWT["JWT Secret<br/>Environment Variable"]
+    end
+
+    Browser -->|"HTTPS"| Vercel
+    Vercel -->|"API Calls"| Railway
+    Railway -->|"Prisma"| MySQL
+    Railway -->|"REST API"| TMDB
+    Railway -->|"Verify"| JWT
+
+    style Client fill:#313244,stroke:#b4befe,color:#cdd6f4
+    style Frontend fill:#45475a,stroke:#a6e3a1,color:#cdd6f4
+    style Backend fill:#45475a,stroke:#89b4fa,color:#cdd6f4
+    style Database fill:#45475a,stroke:#f9e2af,color:#cdd6f4
+    style External fill:#313244,stroke:#f38ba8,color:#cdd6f4

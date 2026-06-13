@@ -1,0 +1,146 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#cba6f7', 'primaryTextColor': '#cdd6f4', 'primaryBorderColor': '#b4befe', 'lineColor': '#94e2d5', 'secondaryColor': '#45475a', 'tertiaryColor': '#313244', 'background': '#1e1e2e', 'mainBkg': '#45475a', 'nodeBorder': '#b4befe', 'clusterBkg': '#313244', 'titleColor': '#cdd6f4', 'edgeLabelBackground': '#45475a', 'fontFamily': 'JetBrainsMono Nerd Font', 'classText': '#cdd6f4'}}}%%
+classDiagram
+    direction TB
+
+    class User {
+        -int id
+        -string username
+        -string email
+        -string password
+        -string role
+        -datetime createdAt
+        +register() void
+        +login() string
+        +updateProfile() void
+        +changePassword() void
+    }
+
+    class Movie {
+        -int id
+        -string title
+        -text description
+        -int duration
+        -string genre
+        -string posterUrl
+        -float rating
+        -datetime createdAt
+        +create() Movie
+        +update() Movie
+        +delete() void
+        +getById() Movie
+        +getAll() List~Movie~
+    }
+
+    class Schedule {
+        -int id
+        -int movieId
+        -datetime showTime
+        -string studio
+        -float price
+        -datetime createdAt
+        +create() Schedule
+        +getByMovie() List~Schedule~
+        +getById() Schedule
+        +delete() void
+    }
+
+    class Booking {
+        -int id
+        -int userId
+        -int scheduleId
+        -string seatNumber
+        -string status
+        -datetime createdAt
+        +create() Booking
+        +cancel() void
+        +getByUser() List~Booking~
+        +getBySchedule() List~Booking~
+    }
+
+    class UserController {
+        -saltRounds int
+        +register(req, res) Response
+        +login(req, res) Response
+        +getProfile(req, res) Response
+        +updateProfile(req, res) Response
+    }
+
+    class MovieController {
+        +list(req, res) Response
+        +getById(req, res) Response
+        +create(req, res) Response
+        +update(req, res) Response
+        +delete(req, res) Response
+    }
+
+    class ScheduleController {
+        +list(req, res) Response
+        +getById(req, res) Response
+        +getSeats(req, res) Response
+        +create(req, res) Response
+    }
+
+    class BookingController {
+        +getById(req, res) Response
+        +create(req, res) Response
+        +listByUser(req, res) Response
+        +cancel(req, res) Response
+    }
+
+    class AdminController {
+        +listAllBookings(req, res) Response
+        +deleteSchedule(req, res) Response
+    }
+
+    class AuthMiddleware {
+        -jwtSecret string
+        +authenticate(req, res, next) void
+        +authorize(roles[]) void
+    }
+
+    class CsrfMiddleware {
+        +protect(req, res, next) void
+    }
+
+    class RateLimitMiddleware {
+        -windowMs int
+        -maxRequests int
+        +limit(req, res, next) void
+    }
+
+    class SanitizeMiddleware {
+        +sanitize(req, res, next) void
+    }
+
+    class HttpsRedirectMiddleware {
+        +redirect(req, res, next) void
+    }
+
+    class Cache {
+        -store Map
+        +get(key) any
+        +set(key, value, ttl) void
+        +delete(key) void
+        +invalidatePrefix(prefix) void
+    }
+
+    class ApiResponse {
+        +success(res, data, status) void
+        +error(res, message, status) void
+    }
+
+    %% Associations (Crow's Foot Notation)
+    User "1" --> "*" Booking : places
+    Movie "1" --> "*" Schedule : has
+    Schedule "1" --> "*" Booking : contains
+    Schedule "*" --> "1" Movie : belongs to
+    Booking "*" --> "1" User : belongs to
+    Booking "*" --> "1" Schedule : belongs to
+
+    %% Dependencies
+    UserController ..> User : uses
+    MovieController ..> Movie : uses
+    ScheduleController ..> Schedule : uses
+    BookingController ..> Booking : uses
+    AdminController ..> Booking : uses
+    AuthMiddleware ..> User : uses

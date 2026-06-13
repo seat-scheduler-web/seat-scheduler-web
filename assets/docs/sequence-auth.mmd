@@ -1,0 +1,146 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#cba6f7', 'primaryTextColor': '#cdd6f4', 'primaryBorderColor': '#b4befe', 'lineColor': '#94e2d5', 'secondaryColor': '#45475a', 'tertiaryColor': '#313244', 'background': '#1e1e2e', 'mainBkg': '#45475a', 'nodeBorder': '#b4befe', 'clusterBkg': '#313244', 'titleColor': '#cdd6f4', 'edgeLabelBackground': '#45475a', 'fontFamily': 'JetBrainsMono Nerd Font', 'actorBorder': '#b4befe', 'actorBkg': '#45475a', 'actorTextColor': '#cdd6f4', 'actorLineColor': '#6c7086', 'signalColor': '#94e2d5', 'signalTextColor': '#cdd6f4', 'labelBoxBkgColor': '#313244', 'labelBoxBorderColor': '#b4befe', 'labelTextColor': '#cdd6f4', 'loopTextColor': '#cba6f7', 'activationBorderColor': '#94e2d5', 'activationBkgColor': '#313244', 'sequenceNumberColor': '#cdd6f4'}}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant Frontend as Frontend<br/>(React)
+    participant API as User<br/>Controller
+    participant DB as Database<br/>(Prisma)
+    participant JWT as JWT<br/>Service
+
+    rect rgb(49, 50, 68)
+        note over User,DB: Registration
+        User->>Frontend: Fill registration form
+        Frontend->>Frontend: Client-side validation
+        Frontend->>API: POST /api/users/register {username, email, password}
+
+        API->>API: Validate input
+
+        alt Missing required fields
+            API-->>Frontend: 400 {error: "Missing fields"}
+            Frontend-->>User: "Please fill all fields"
+        end
+
+        alt Password too short
+            API-->>Frontend: 400 {error: "Password min 6 chars"}
+            Frontend-->>User: "Password too short"
+        end
+
+        API->>DB: SELECT user WHERE username
+        DB-->>API: Existing user
+
+        alt Username already exists
+            API-->>Frontend: 409 {error: "Username taken"}
+            Frontend-->>User: "Username already exists"
+        end
+
+        API->>DB: SELECT user WHERE email
+        DB-->>API: Existing user
+
+        alt Email already exists
+            API-->>Frontend: 409 {error: "Email registered"}
+            Frontend-->>User: "Email already registered"
+        end
+
+        API->>API: bcrypt.hash(password, 10)
+        API->>DB: INSERT user (username, email, hashedPassword, role=USER)
+        DB-->>API: Created user
+        API->>JWT: sign({id: user.id}, secret, {expiresIn: "7d"})
+        JWT-->>API: token
+        API-->>Frontend: 201 {token, user}
+        Frontend->>Frontend: Store token
+        Frontend-->>User: Redirect to home
+    end
+
+    rect rgb(49, 50, 68)
+        note over User,DB: Login
+        User->>Frontend: Enter email & password
+        Frontend->>API: POST /api/users/login {email, password}
+
+        API->>API: Validate input
+
+        alt Missing fields
+            API-->>Frontend: 400 {error: "Missing fields"}
+            Frontend-->>User: "Please fill all fields"
+        end
+
+        API->>DB: SELECT user WHERE email
+        DB-->>API: User data
+
+        alt User not found
+            API-->>Frontend: 401 {error: "Invalid credentials"}
+            Frontend-->>User: "Invalid email or password"
+        end
+
+        API->>API: bcrypt.compare(password, user.password)
+
+        alt Password doesn't match
+            API-->>Frontend: 401 {error: "Invalid credentials"}
+            Frontend-->>User: "Invalid email or password"
+        end
+
+        API->>JWT: sign({id: user.id}, secret, {expiresIn: "7d"})
+        JWT-->>API: token
+        API-->>Frontend: 200 {token, user}
+        Frontend->>Frontend: Store token
+        Frontend-->>User: Redirect to home
+    end
+
+    rect rgb(49, 50, 68)
+        note over User,DB: Authenticated Request
+        User->>Frontend: Access protected page
+        Frontend->>API: GET /api/users/me (Authorization: Bearer token)
+        API->>JWT: verify(token, secret)
+
+        alt Invalid token
+            JWT-->>API: Error
+            API-->>Frontend: 401 {error: "Invalid token"}
+            Frontend-->>User: Redirect to login
+        end
+
+        alt Expired token
+            JWT-->>API: Error
+            API-->>Frontend: 401 {error: "Token expired"}
+            Frontend-->>User: Redirect to login
+        end
+
+        JWT-->>API: decoded {userId}
+        API->>DB: SELECT user WHERE id
+        DB-->>API: User data
+
+        alt User not found
+            API-->>Frontend: 404 {error: "User not found"}
+            Frontend-->>User: "User not found"
+        end
+
+        API-->>Frontend: 200 {user}
+        Frontend-->>User: Display profile
+    end
+
+    rect rgb(49, 50, 68)
+        note over User,DB: Update Profile
+        User->>Frontend: Edit username & email
+        Frontend->>API: PUT /api/users/profile {username, email}
+        API->>JWT: verify(token, secret)
+        JWT-->>API: decoded {userId}
+
+        API->>DB: SELECT user WHERE username AND id != userId
+        DB-->>API: Existing user
+
+        alt Username taken
+            API-->>Frontend: 409 {error: "Username taken"}
+            Frontend-->>User: "Username already exists"
+        end
+
+        API->>DB: SELECT user WHERE email AND id != userId
+        DB-->>API: Existing user
+
+        alt Email taken
+            API-->>Frontend: 409 {error: "Email registered"}
+            Frontend-->>User: "Email already registered"
+        end
+
+        API->>DB: UPDATE user SET username, email WHERE id
+        DB-->>API: Updated user
+        API-->>Frontend: 200 {user}
+        Frontend-->>User: "Profile updated"
+    end
