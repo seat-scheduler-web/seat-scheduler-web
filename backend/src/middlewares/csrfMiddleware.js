@@ -40,7 +40,7 @@ function getCsrfToken(req, res) {
   if (!token) {
     token = generateToken();
     res.cookie(CSRF_COOKIE_NAME, token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: true,
       sameSite: "none",
       path: "/",
