@@ -36,17 +36,14 @@ function csrfProtection(req, res, next) {
 }
 
 function getCsrfToken(req, res) {
-  let token = req.cookies?.[CSRF_COOKIE_NAME];
-  if (!token) {
-    token = generateToken();
-    res.cookie(CSRF_COOKIE_NAME, token, {
-      httpOnly: false,
-      secure: true,
-      sameSite: "none",
-      path: "/",
-      partitioned: true,
-    });
-  }
+  const token = generateToken();
+  res.cookie(CSRF_COOKIE_NAME, token, {
+    httpOnly: false,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    partitioned: true,
+  });
   return token;
 }
 
