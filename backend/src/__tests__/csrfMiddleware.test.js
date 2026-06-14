@@ -186,14 +186,15 @@ describe("csrfMiddleware", () => {
   });
 
   describe("getCsrfToken", () => {
-    it("should return existing token from cookie", () => {
+    it("should always generate a new token and set cookie", () => {
       const req = createMockReq("GET", { csrf_token: "existing-token" });
       const res = createMockRes();
 
       const token = getCsrfToken(req, res);
 
-      expect(token).toBe("existing-token");
-      expect(res.cookie).not.toHaveBeenCalled();
+      expect(token).toBeDefined();
+      expect(token.length).toBe(64);
+      expect(res.cookie).toHaveBeenCalled();
     });
 
     it("should generate new token if no cookie exists", () => {
