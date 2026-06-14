@@ -13,8 +13,8 @@ function csrfProtection(req, res, next) {
     const token = generateToken();
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
       path: "/",
     });
     res.locals.csrfToken = token;
@@ -40,8 +40,8 @@ function getCsrfToken(req, res) {
     token = generateToken();
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
       path: "/",
     });
   }

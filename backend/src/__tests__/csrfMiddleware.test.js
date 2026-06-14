@@ -44,7 +44,8 @@ describe("csrfMiddleware", () => {
         expect.any(String),
         expect.objectContaining({
           httpOnly: false,
-          sameSite: "lax",
+          sameSite: "none",
+          secure: true,
           path: "/",
         }),
       );
