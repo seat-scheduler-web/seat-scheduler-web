@@ -46,6 +46,7 @@ describe("csrfMiddleware", () => {
           httpOnly: false,
           sameSite: "none",
           secure: true,
+          partitioned: true,
           path: "/",
         }),
       );

@@ -16,6 +16,7 @@ function csrfProtection(req, res, next) {
       secure: true,
       sameSite: "none",
       path: "/",
+      partitioned: true,
     });
     res.locals.csrfToken = token;
     return next();
@@ -43,6 +44,7 @@ function getCsrfToken(req, res) {
       secure: true,
       sameSite: "none",
       path: "/",
+      partitioned: true,
     });
   }
   return token;
