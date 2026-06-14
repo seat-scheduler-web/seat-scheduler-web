@@ -1,37 +1,21 @@
 // API client - uses VITE_API_BASE from environment variables
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000/api";
 
-let cachedCsrfToken = null;
-
-function getCsrfTokenFromCookie() {
-  const match = document.cookie.match(/csrf_token=([^;]+)/);
-  return match ? match[1] : null;
-}
-
 async function fetchCsrfToken() {
-  try {
-    const res = await fetch(`${API_BASE}/users/csrf-token`, {
-      credentials: "include",
-    });
-    const data = await res.json();
-    cachedCsrfToken = data.csrfToken;
-    return cachedCsrfToken;
-  } catch {
-    return null;
-  }
-}
-
-function getCsrfToken() {
-  return cachedCsrfToken || getCsrfTokenFromCookie();
+  const res = await fetch(`${API_BASE}/users/csrf-token`, {
+    credentials: "include",
+  });
+  const data = await res.json();
+  return data.csrfToken;
 }
 
 export async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem("token");
-  let csrfToken = getCsrfToken();
-
-  // For mutating requests, ensure we have a CSRF token
   const method = options.method?.toUpperCase() || "GET";
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && !csrfToken) {
+
+  // Always fetch a fresh CSRF token for mutating requests
+  let csrfToken = null;
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
     csrfToken = await fetchCsrfToken();
   }
 
@@ -58,6 +42,3 @@ export async function apiRequest(endpoint, options = {}) {
 
   return data;
 }
-
-// Initialize CSRF token on app load
-fetchCsrfToken();
