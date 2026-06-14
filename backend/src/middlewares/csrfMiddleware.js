@@ -14,7 +14,7 @@ function csrfProtection(req, res, next) {
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
     });
     res.locals.csrfToken = token;
@@ -41,7 +41,7 @@ function getCsrfToken(req, res) {
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
     });
   }
