@@ -16,7 +16,6 @@ import {
   sanitizeInput,
   setSecurityHeaders,
 } from "./middlewares/sanitizeMiddleware.js";
-import { csrfProtection } from "./middlewares/csrfMiddleware.js";
 import {
   httpsRedirect,
   setHttpsSecurityHeaders,
@@ -37,7 +36,7 @@ app.use(
   cors({
     origin: allowedOrigins,
     methods: ["GET", "POST", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-csrf-token"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
 );
@@ -46,7 +45,6 @@ app.use(cookieParser());
 app.use(sanitizeInput);
 app.use(setSecurityHeaders);
 app.use(setHttpsSecurityHeaders);
-app.use(csrfProtection);
 app.use(httpsRedirect);
 
 // Apply rate limiting to API routes
